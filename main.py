@@ -25,26 +25,18 @@ cv2.imwrite(os.path.join(output_folder, "gray_image.jpg"), gray)
 gray = cv2.bilateralFilter(gray, 13, 15, 15)
 cv2.imwrite(os.path.join(output_folder, "bilateral_filtered.jpg"), gray)
 
-# edged = cv2.Canny(gray, 50, 200)
-# cv2.imwrite(os.path.join(output_folder, "edged_image.jpg"), edged)
+thresh = cv2.adaptiveThreshold(gray, 255, 1, 1, 11, 2)
 
-# contours = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-# contours = imutils.grab_contours(contours)
+contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-# contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
+for cnt in contours:
+    if cv2.contourArea(cnt) > 100:
+        x, y, w, h = cv2.boundingRect(cnt)
 
-# possible_texts = []
-# number_found = False
-# for idx, c in enumerate(contours):
-#     mask = np.zeros(gray.shape, np.uint8)
-#     cv2.drawContours(mask, [c], -1, 255, -1)
+        if h > 28 and w > 10:
+            cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
-#     (x, y, w, h) = cv2.boundingRect(c)
-#     roi = gray[y:y+h, x:x+w]
-
-#     if w > 50 and h > 15:
-#         if not number_found:
-#             cv2.imwrite(os.path.join(output_folder, "first_roi.jpg"), roi)
+cv2.imwrite(os.path.join(output_folder, "output_image_with_rectangles.jpg"), img)
 
 #         config = '--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
 #         text = pytesseract.image_to_string(roi, config=config)
@@ -69,5 +61,4 @@ cv2.imwrite(os.path.join(output_folder, "bilateral_filtered.jpg"), gray)
 # else:
 #     print("Номера не найдены.")
 
-# print(f"\nПромежуточные изображения сохранены в папке: {output_folder}")
-# print(f"Финальное изображение сохранено как: {final_image_path}")
+print(f"\nПромежуточные изображения сохранены в папке: {output_folder}")
