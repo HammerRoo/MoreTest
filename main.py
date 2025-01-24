@@ -34,16 +34,17 @@ cv2.imwrite(os.path.join(output_folder, "adaptive_threshold.jpg"), thresh)
 contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 # Тут пока просто все контуры выделяем
+img_all_rectangles = img.copy()
 for cnt in contours:
     if cv2.contourArea(cnt) > 100:
         x, y, w, h = cv2.boundingRect(cnt)
 
         if h > 28 and w > 10:
-            cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
-cv2.imwrite(os.path.join(output_folder, "image_with_all_rectangles.jpg"), img)
+            cv2.rectangle(img_all_rectangles, (x, y), (x + w, y + h), (255, 0, 0), 2)
+cv2.imwrite(os.path.join(output_folder, "image_with_all_rectangles.jpg"), img_all_rectangles)
 
 # Тут уже выделяем только контуры с цифрами и сразу ищем ту в которой есть 8 цифр
-img_with_digits_only = img.copy()
+img_with_digits_only = np.zeros_like(img)
 final_area = None
 final_number = ""
 for cnt in contours:
@@ -54,7 +55,7 @@ for cnt in contours:
             text = pytesseract.image_to_string(roi, config=config).strip()
 
             if text.isdigit():
-                cv2.rectangle(img_with_digits_only, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.rectangle(img_with_digits_only, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
                 if len(text) == 8:
                     final_area = (x, y, w, h)
@@ -64,8 +65,9 @@ cv2.imwrite(os.path.join(output_folder, "image_with_digits_only.jpg"), img_with_
 # А теперь сохраняем конечный результат
 if final_area:
     x, y, w, h = final_area
-    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
-    cv2.imwrite(os.path.join(output_folder, "final_image.jpg"), img)
+    img_final = np.zeros_like(img)
+    cv2.rectangle(img_final, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    cv2.imwrite(os.path.join(output_folder, "final_image.jpg"), img_final)
     print(f"Распознанный номер: {final_number}")
 else:
     print("Область с 8 цифрами не найдена.")
