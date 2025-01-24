@@ -1,10 +1,10 @@
 # NumbersTest
 This code is part of test task which finds and recognizes numbers on image
 
-Currently this code only provides basic image modifications and quality improvements.
-
-At the moment, a part of the code is being created that will search for all the numbers in the image and highlight them.
-
-The next step is to search and compare distances in order to discard the extra digits and leave the number with 8 digits.
-
-After this, the last step will be to recognize the digits of the found number.
+This code only provides:
+1) basic image modifications and quality improvements.
+2) Searching for all contours that look like numbers/letters/symbols.
+3) Highlighting and saving image with found contours
+4) Using OCR to recognize numbers/letters/symbols on found contours.
+5) Saving image with contours that got numbers/letters/symbols in them.
+6) Saving image with contour that got 8 digits or more in it.
