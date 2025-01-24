@@ -44,7 +44,7 @@ for cnt in contours:
 cv2.imwrite(os.path.join(output_folder, "image_with_all_rectangles.jpg"), img_all_rectangles)
 
 # Тут уже выделяем только контуры с цифрами и сразу ищем ту в которой есть 8 цифр
-img_with_digits_only = np.zeros_like(img)
+img_with_digits_only = img.copy()
 final_area = None
 final_number = ""
 for cnt in contours:
@@ -65,7 +65,7 @@ cv2.imwrite(os.path.join(output_folder, "image_with_digits_only.jpg"), img_with_
 # А теперь сохраняем конечный результат
 if final_area:
     x, y, w, h = final_area
-    img_final = np.zeros_like(img)
+    img_final = img.copy()
     cv2.rectangle(img_final, (x, y), (x + w, y + h), (255, 0, 0), 2)
     cv2.imwrite(os.path.join(output_folder, "final_image.jpg"), img_final)
     print(f"Распознанный номер: {final_number}")
