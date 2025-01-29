@@ -28,7 +28,7 @@ cv2.imwrite(os.path.join(output_folder, "gray_image.jpg"), gray)
 gray = cv2.bilateralFilter(gray, 13, 15, 15)
 cv2.imwrite(os.path.join(output_folder, "bilateral_filtered.jpg"), gray)
 
-thresh = cv2.adaptiveThreshold(gray, 255, 1, 1, 11, 2)
+thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
 cv2.imwrite(os.path.join(output_folder, "adaptive_threshold.jpg"), thresh)
 
 contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -49,7 +49,7 @@ found_digits = []
 for cnt in contours:
     if cv2.contourArea(cnt) > 100:
         x, y, w, h = cv2.boundingRect(cnt)
-        if h > 28 and w > 10:
+        if h > 18 and w > 8:
             roi = gray[y:y+h, x:x+w]
             text = pytesseract.image_to_string(roi, config=config).strip()
 
@@ -73,10 +73,12 @@ for x, y, w, h, text in found_digits:
 if not final_number and len(found_digits) >= 8:
     found_digits.sort(key=lambda d: (d[1], d[0]))
     grouped_digits = found_digits[:8]
+
     x_min = min(d[0] for d in  grouped_digits)
     y_min = min(d[1] for d in  grouped_digits)
     x_max = max(d[0] + d[2] for d in  grouped_digits)
     y_max = max(d[1] + d[3] for d in  grouped_digits)
+
     final_area = (x_min, y_min, x_max - x_min, y_max - y_min)
     final_number = "".join(d[4] for d in grouped_digits)
 
