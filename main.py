@@ -36,10 +36,10 @@ contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPL
 # Тут пока просто все контуры выделяем
 img_all_rectangles = img.copy()
 for cnt in contours:
-    if cv2.contourArea(cnt) > 10:
+    if cv2.contourArea(cnt) > 100:
         x, y, w, h = cv2.boundingRect(cnt)
 
-        if h > 12 and w > 3:
+        if h > 24 and w > 10:
             cv2.rectangle(img_all_rectangles, (x, y), (x + w, y + h), (255, 0, 0), 2)
 cv2.imwrite(os.path.join(output_folder, "image_with_all_rectangles.jpg"), img_all_rectangles)
 
@@ -49,7 +49,7 @@ found_digits = []
 for cnt in contours:
     if cv2.contourArea(cnt) > 100:
         x, y, w, h = cv2.boundingRect(cnt)
-        if h > 18 and w > 8:
+        if h > 24 and w > 10:
             roi = gray[y:y+h, x:x+w]
             text = pytesseract.image_to_string(roi, config=config).strip()
 
