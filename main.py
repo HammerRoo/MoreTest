@@ -79,13 +79,13 @@ while True:
 
     # В случае если нашли область с 8-ю цифрами
     for x, y, w, h, text in found_digits:
-        if len(text) == 8:
+        if 5 <= len(text) <= 8:
             final_area = (x, y, w, h)
             final_number = text
             break
 
     # В случае если область с 8-ю цифрами не найдена
-    if not final_number and len(found_digits) >= 8:
+    if not final_number and len(found_digits) >= 5:
         found_digits.sort(key=lambda d: (d[1], d[0]))
         grouped_digits = found_digits[:8]
 
@@ -103,13 +103,12 @@ while True:
         img_final = img.copy()
 
         cv2.rectangle(img_final, (x, y), (x + w, y + h), (255, 0, 0), 2)
-        text_size = int(max(w, h) * 0.2)
-        cv2.putText(img_final, final_number, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, text_size / 30, (255, 0, 0), 2)
+        cv2.putText(img_final, final_number, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
 
         cv2.imwrite(os.path.join(output_folder, "final_image.jpg"), img_final)
         print(f"Распознанный номер: {final_number}")
     else:
-        print("Область с 8 цифрами не найдена.")
+        print("Область с 6-8 цифрами не найдена.")
 
     print(f"\nПромежуточные изображения сохранены в папке: {output_folder}")
 
