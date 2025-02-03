@@ -68,7 +68,7 @@ while True:
                 roi = gray[y:y+h, x:x+w]
                 text = pytesseract.image_to_string(roi, config=config).strip()
 
-                if text.isdigit():
+                if text.isdigit() and 6 <= len(text) <= 8:
                     found_digits.append((x, y, w, h, text))
                     cv2.rectangle(img_with_digits_only, (x, y), (x + w, y + h), (255, 0, 0), 2)
     cv2.imwrite(os.path.join(output_folder, "image_with_digits_only.jpg"), img_with_digits_only)
