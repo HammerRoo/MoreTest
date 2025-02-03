@@ -11,15 +11,18 @@ output_folder = "output_images"
 os.makedirs(output_folder, exist_ok=True)
 
 while True:
-    image_path = input("Введите путь к изображению для распознавания текста: ")
+    image_path = input("Введите путь к изображению (или 'exit' для выхода): ")
+    if image_path.lower() == 'exit':
+        break
 
-    try:
-        img = cv2.imread(image_path, cv2.IMREAD_COLOR)
-        if img is None:
-            raise FileNotFoundError("Изображение не найдено. Проверьте путь к файлу.")
-    except Exception as e:
-        print(f"Ошибка при загрузке изображения: {e}")
-        exit()
+    if not os.path.isfile(image_path):
+        print("Файл не найден!")
+        continue
+
+    img = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    if img is None:
+        print("Не удалось загрузить изображение!")
+        continue
 
     cv2.imwrite(os.path.join(output_folder, "original_image.jpg"), img)
 
@@ -96,6 +99,7 @@ while True:
         print(f"Распознанный номер: {final_number}")
     else:
         print("Область с 8 цифрами не найдена.")
+        
+    print(f"\nПромежуточные изображения сохранены в папке: {output_folder}")
 
-print(f"\nПромежуточные изображения сохранены в папке: {output_folder}")
 print("Программа завершена")
