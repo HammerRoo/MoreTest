@@ -29,13 +29,24 @@ while True:
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     cv2.imwrite(os.path.join(output_folder, "gray_image.jpg"), gray)
 
-    gray = cv2.bilateralFilter(gray, 13, 15, 15)
-    cv2.imwrite(os.path.join(output_folder, "bilateral_filtered.jpg"), gray)
+    gray = cv2.medianBlur(gray, 3)
+    cv2.imwrite(os.path.join(output_folder, "median_blur.jpg"), gray)
+
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    gray = clahe.apply(gray)
+    cv2.imwrite(os.path.join(output_folder, "clahe_image.jpg"), gray)
+
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    cv2.imwrite(os.path.join(output_folder, "gaussian_blur.jpg"), gray)
 
     thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     cv2.imwrite(os.path.join(output_folder, "adaptive_threshold.jpg"), thresh)
 
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    kernel = np.ones((3, 3), np.uint8)
+    morph = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+    cv2.imwrite(os.path.join(output_folder, "morphological_operations.jpg"), morph)
+
+    contours, _ = cv2.findContours(morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Тут пока просто все контуры выделяем
     img_all_rectangles = img.copy()
@@ -99,7 +110,7 @@ while True:
         print(f"Распознанный номер: {final_number}")
     else:
         print("Область с 8 цифрами не найдена.")
-        
+
     print(f"\nПромежуточные изображения сохранены в папке: {output_folder}")
 
 print("Программа завершена")
