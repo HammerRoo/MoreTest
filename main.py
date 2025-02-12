@@ -1,6 +1,10 @@
 import cv2
 import numpy as np
+import pytesseract
+import imutils
 import os
+
+pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
 
 output_folder = "output_images"
 os.makedirs(output_folder, exist_ok=True)
