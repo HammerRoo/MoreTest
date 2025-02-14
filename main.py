@@ -18,14 +18,14 @@ def preprocess_image(image):
     save_image(blurred, "2_blurred.jpg")
 
     thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                   cv2.THRESH_BINARY_INV, 19, 3) # 11,2 стандарт, 19,3 также хороший результат
+                                   cv2.THRESH_BINARY_INV, 11, 2) # 11,2 стандарт, 19,3 также хороший результат
     save_image(thresh, "3_thresh.jpg")
 
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     opened = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
     save_image(opened, "4_opened.jpg")
 
-    closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel, iterations=2) # на 3 видно рамкой весь номер, на 2 по отдельности цифры
+    closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel, iterations=3) # на 3 видно рамкой весь номер, на 2 по отдельности цифры
     save_image(closed, "5_closed.jpg")
 
     return closed
