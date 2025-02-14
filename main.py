@@ -14,7 +14,7 @@ def preprocess_image(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     save_image(gray, "1_gray.png")
 
-    blurred = cv2.GaussianBlur(gray, (9, 9), 3)
+    blurred = cv2.GaussianBlur(gray, (11, 11), 7)
     save_image(blurred, "2_blurred.png")
 
     thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
@@ -28,8 +28,8 @@ def preprocess_image(image):
     closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel, iterations=3) # на 3 видно рамкой весь номер, на 2 по отдельности цифры
     save_image(closed, "5_closed.png")
 
-    dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-    dilated = cv2.dilate(closed, dilated_kernel, iterations=1)
+    dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
+    dilated = cv2.dilate(closed, dilated_kernel, iterations=4)
     save_image(dilated, "6_dilated.png")
 
     return dilated
