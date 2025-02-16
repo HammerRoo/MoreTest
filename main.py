@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 import os
+import pytesseract
+
+pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
 
 output_folder = "output_images"
 os.makedirs(output_folder, exist_ok=True)
@@ -38,6 +41,7 @@ def find_and_draw_digits(image, processed_image):
     contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     output_image = image.copy()
+    detected_numbers = []
 
     for contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
@@ -45,8 +49,16 @@ def find_and_draw_digits(image, processed_image):
 
         if area > 100:
             cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            
+            roi = image[y:y+h, x:x+w]
+            
+            text = pytesseract.image_to_string(roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789')
+            text = text.strip()
+            
+            if 8 <= len(text) <= 10 and text.isdigit():
+                detected_numbers.append(text)
     
-    return output_image
+    return output_image, detected_numbers
 
 def main():
     while True:
@@ -64,9 +76,14 @@ def main():
         
         processed_image = preprocess_image(image)
         
-        result_image = find_and_draw_digits(image, processed_image)
+        result_image, detected_numbers = find_and_draw_digits(image, processed_image)
         
         save_image(result_image, "6_result.jpg")
 
+        if detected_numbers:
+            print("Номер вагона виден: ", detected_numbers)
+        else:
+            print("Номер вагона не виден")
+            
 if __name__ == "__main__":
     main()
