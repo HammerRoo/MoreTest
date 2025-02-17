@@ -37,6 +37,17 @@ def preprocess_image(image):
 
     return dilated
 
+def preprocess_roi(roi):
+    gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    equalized_roi = cv2.equalizeHist(gray_roi)
+    
+    _, binary_roi = cv2.threshold(equalized_roi, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    cleaned_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_OPEN, kernel, iterations=1)
+    
+    return cleaned_roi
+
 def find_and_draw_digits(image, processed_image):
     contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
