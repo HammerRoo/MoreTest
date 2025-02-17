@@ -55,7 +55,7 @@ def find_and_draw_digits(image, processed_image):
             text = pytesseract.image_to_string(roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789')
             text = text.strip()
             
-            if 8 <= len(text) <= 10 and text.isdigit():
+            if len(text) >= 8 and text.isdigit():
                 detected_numbers.append(text)
     
     return output_image, detected_numbers
@@ -78,7 +78,7 @@ def main():
         
         result_image, detected_numbers = find_and_draw_digits(image, processed_image)
         
-        save_image(result_image, "6_result.jpg")
+        save_image(result_image, "7_result.jpg")
 
         if detected_numbers:
             print("Номер вагона виден: ", detected_numbers)
