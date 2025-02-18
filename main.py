@@ -6,12 +6,19 @@ import pytesseract
 pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
 
 output_folder = "output_images"
+roi_folder = os.path.join(output_folder, "roi")
 os.makedirs(output_folder, exist_ok=True)
+os.makedirs(roi_folder, exist_ok=True)
 
 def save_image(image, name):
     path = os.path.join(output_folder, name)
     cv2.imwrite(path, image)
     print(f"Изображение сохранено: {path}")
+
+def save_roi(image, name):
+    path = os.path.join(roi_folder, name)
+    cv2.imwrite(path, image)
+    print(f"ROI сохранен: {path}")
 
 def preprocess_image(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -37,17 +44,6 @@ def preprocess_image(image):
 
     return dilated
 
-def preprocess_roi(roi):
-    gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    equalized_roi = cv2.equalizeHist(gray_roi)
-    
-    _, binary_roi = cv2.threshold(equalized_roi, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-    cleaned_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_OPEN, kernel, iterations=1)
-    
-    return cleaned_roi
-
 def find_and_draw_digits(image, processed_image):
     contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
@@ -63,11 +59,29 @@ def find_and_draw_digits(image, processed_image):
             
             roi = image[y:y+h, x:x+w]
             
-            text = pytesseract.image_to_string(roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789')
+            gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            equalized_roi = cv2.equalizeHist(gray_roi)
+
+            binary_roi = cv2.adaptiveThreshold(equalized_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 27, 5)
+
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+            cleaned_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, kernel, iterations=2) # 1
+
+            scale_factor = 3
+            resized_roi = cv2.resize(cleaned_roi, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LINEAR)
+
+            preprocessed_roi = resized_roi #cleaned_roi
+
+            text = pytesseract.image_to_string(preprocessed_roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789')
             text = text.strip()
             
-            if len(text) >= 8 and text.isdigit():
+            if len(text) >= 3 and text.isdigit():
                 detected_numbers.append(text)
+                save_roi(equalized_roi, "gray_roi.png")
+                save_roi(binary_roi, "thresh_roi.png")
+                save_roi(resized_roi, "resized_roi.png")
+                save_roi(cleaned_roi, "morph_roi.png")
+                save_roi(resized_roi, "resized_roi.png")
     
     return output_image, detected_numbers
 
