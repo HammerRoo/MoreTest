@@ -85,7 +85,43 @@ def find_and_draw_digits(image, processed_image):
     
     return output_image, detected_numbers
 
-def main():
+def process_video():
+    video_path = input("Введите путь к видео: ")
+    cap = cv2.VideoCapture(video_path)
+    
+    if not cap.isOpened():
+        print("Ошибка загрузки видео. Проверьте путь и попробуйте снова.")
+        return
+    
+    frame_skip = 5
+    frame_count = 0
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Видео закончилось или произошла ошибка чтения.")
+            break
+        
+        frame_count += 1
+        
+        cv2.imshow("Video", frame)
+        
+        if frame_count % frame_skip == 0:
+            processed_image = preprocess_image(frame)
+            _, detected_numbers = find_and_draw_digits(frame, processed_image)
+            
+            if detected_numbers:
+                print(f"Кадр {frame_count}: Номер вагона виден: {detected_numbers}")
+            else:
+                print(f"Кадр {frame_count}: Номер вагона не виден")
+        
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    
+    cap.release()
+    cv2.destroyAllWindows()
+
+def process_image():
     while True:
         image_path = input("Введите путь к изображению (или 'exit' для выхода): ")
         
@@ -109,6 +145,24 @@ def main():
             print("Номер вагона виден: ", detected_numbers)
         else:
             print("Номер вагона не виден")
+            
+def main():
+    while True:
+        print("Выберите режим:")
+        print("1. Обработка изображения")
+        print("2. Обработка видео")
+        print("3. Выход")
+        choice = input("Введите номер режима: ")
+        
+        if choice == '1':
+            process_image()
+        elif choice == '2':
+            process_video()
+        elif choice == '3':
+            print("Выход из программы.")
+            break
+        else:
+            print("Неверный выбор. Попробуйте снова.")
             
 if __name__ == "__main__":
     main()
