@@ -50,7 +50,7 @@ def find_and_draw_digits(image, processed_image):
     output_image = image.copy()
     detected_numbers = []
 
-    for contour in contours:
+    for i, contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
         area = cv2.contourArea(contour)
 
@@ -62,26 +62,30 @@ def find_and_draw_digits(image, processed_image):
             gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
             equalized_roi = cv2.equalizeHist(gray_roi)
 
+            blurred_roi = cv2.GaussianBlur(equalized_roi, (3, 3), 0)
+            save_roi(blurred_roi, f"blurr_roi_{i}.png")
+
             binary_roi = cv2.adaptiveThreshold(equalized_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 27, 5)
+            save_roi(binary_roi, f"thresh_roi_{i}.png")
 
-            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-            cleaned_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, kernel, iterations=2) # 1
+            kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+            closed_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, kernel_close, iterations=2) #1
+            save_roi(closed_roi, f"morph_roi_{i}.png")
 
-            scale_factor = 3
-            resized_roi = cv2.resize(cleaned_roi, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LINEAR)
+            kernel_erode = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+            eroded_roi = cv2.erode(closed_roi, kernel_erode, iterations=1)
+            save_roi(eroded_roi, f"eroded_roi_{i}.png")
+            
+            scale_factor = 2
+            resized_roi = cv2.resize(eroded_roi, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LINEAR)
 
-            preprocessed_roi = resized_roi #cleaned_roi
+            preprocessed_roi = resized_roi
 
             text = pytesseract.image_to_string(preprocessed_roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789')
             text = text.strip()
             
             if len(text) >= 3 and text.isdigit():
                 detected_numbers.append(text)
-                save_roi(equalized_roi, "gray_roi.png")
-                save_roi(binary_roi, "thresh_roi.png")
-                save_roi(resized_roi, "resized_roi.png")
-                save_roi(cleaned_roi, "morph_roi.png")
-                save_roi(resized_roi, "resized_roi.png")
     
     return output_image, detected_numbers
 
@@ -145,7 +149,7 @@ def process_image():
             print("Номер вагона виден: ", detected_numbers)
         else:
             print("Номер вагона не виден")
-            
+
 def main():
     while True:
         print("Выберите режим:")
