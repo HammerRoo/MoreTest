@@ -63,18 +63,18 @@ def find_and_draw_digits(image, processed_image):
             equalized_roi = cv2.equalizeHist(gray_roi)
 
             blurred_roi = cv2.GaussianBlur(equalized_roi, (3, 3), 0)
-            save_roi(blurred_roi, f"blurr_roi_{i}.png")
+            save_roi(blurred_roi, f"{i}_blurr_roi.png")
 
             binary_roi = cv2.adaptiveThreshold(equalized_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 27, 5)
-            save_roi(binary_roi, f"thresh_roi_{i}.png")
+            save_roi(binary_roi, f"{i}_thresh_roi.png")
 
             kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
             closed_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, kernel_close, iterations=2) #1
-            save_roi(closed_roi, f"morph_roi_{i}.png")
+            save_roi(closed_roi, f"{i}_morph_roi.png")
 
             kernel_erode = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
             eroded_roi = cv2.erode(closed_roi, kernel_erode, iterations=1)
-            save_roi(eroded_roi, f"eroded_roi_{i}.png")
+            save_roi(eroded_roi, f"{i}_eroded_roi.png")
             
             scale_factor = 2
             resized_roi = cv2.resize(eroded_roi, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LINEAR)
