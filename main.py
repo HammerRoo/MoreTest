@@ -50,7 +50,7 @@ def find_and_draw_digits(image, processed_image):
     output_image = image.copy()
     detected_numbers = []
 
-    for i, contour in contours:
+    for i, contour in enumerate(contours):
         x, y, w, h = cv2.boundingRect(contour)
         area = cv2.contourArea(contour)
 
@@ -60,12 +60,16 @@ def find_and_draw_digits(image, processed_image):
             roi = image[y:y+h, x:x+w]
             
             gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            equalized_roi = cv2.equalizeHist(gray_roi)
 
-            blurred_roi = cv2.GaussianBlur(equalized_roi, (3, 3), 0)
+            smoothed_roi = cv2.bilateralFilter(gray_roi, d=5, sigmaColor=50, sigmaSpace=50)
+
+            clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
+            equalized_roi = clahe.apply(smoothed_roi) # gray_roi
+            
+            blurred_roi = cv2.GaussianBlur(equalized_roi, (3, 3), 6)
             save_roi(blurred_roi, f"{i}_blurr_roi.png")
 
-            binary_roi = cv2.adaptiveThreshold(equalized_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 27, 5)
+            binary_roi = cv2.adaptiveThreshold(equalized_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 27, 7)
             save_roi(binary_roi, f"{i}_thresh_roi.png")
 
             kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
@@ -73,7 +77,7 @@ def find_and_draw_digits(image, processed_image):
             save_roi(closed_roi, f"{i}_morph_roi.png")
 
             kernel_erode = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-            eroded_roi = cv2.erode(closed_roi, kernel_erode, iterations=1)
+            eroded_roi = cv2.erode(closed_roi, kernel_erode, iterations=3)
             save_roi(eroded_roi, f"{i}_eroded_roi.png")
             
             scale_factor = 2
@@ -84,7 +88,7 @@ def find_and_draw_digits(image, processed_image):
             text = pytesseract.image_to_string(preprocessed_roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789')
             text = text.strip()
             
-            if len(text) >= 3 and text.isdigit():
+            if len(text) >= 7 and text.isdigit():
                 detected_numbers.append(text)
     
     return output_image, detected_numbers
