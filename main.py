@@ -22,25 +22,25 @@ def save_roi(image, name):
 
 def preprocess_image(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    save_image(gray, "1_gray.png")
+    #save_image(gray, "1_gray.png")
 
     blurred = cv2.GaussianBlur(gray, (11, 11), 7)
-    save_image(blurred, "2_blurred.png")
+    #save_image(blurred, "2_blurred.png")
 
     thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                    cv2.THRESH_BINARY_INV, 11, 2) # 11,2 стандарт, 19,3 также хороший результат
-    save_image(thresh, "3_thresh.png")
+    #save_image(thresh, "3_thresh.png")
 
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     opened = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
-    save_image(opened, "4_opened.png")
+    #save_image(opened, "4_opened.png")
 
     closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel, iterations=3) # на 3 видно рамкой весь номер, на 2 по отдельности цифры
-    save_image(closed, "5_closed.png")
+    #save_image(closed, "5_closed.png")
 
     dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
     dilated = cv2.dilate(closed, dilated_kernel, iterations=4)
-    save_image(dilated, "6_dilated.png")
+    #save_image(dilated, "6_dilated.png")
 
     return dilated
 
@@ -67,18 +67,14 @@ def find_and_draw_digits(image, processed_image):
             equalized_roi = clahe.apply(smoothed_roi) # gray_roi
             
             blurred_roi = cv2.GaussianBlur(equalized_roi, (3, 3), 6)
-            save_roi(blurred_roi, f"{i}_blurr_roi.png")
 
             binary_roi = cv2.adaptiveThreshold(equalized_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 27, 7)
-            save_roi(binary_roi, f"{i}_thresh_roi.png")
 
             kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
             closed_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, kernel_close, iterations=2) #1
-            save_roi(closed_roi, f"{i}_morph_roi.png")
 
             kernel_erode = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
             eroded_roi = cv2.erode(closed_roi, kernel_erode, iterations=3)
-            save_roi(eroded_roi, f"{i}_eroded_roi.png")
             
             scale_factor = 2
             resized_roi = cv2.resize(eroded_roi, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LINEAR)
@@ -88,7 +84,13 @@ def find_and_draw_digits(image, processed_image):
             text = pytesseract.image_to_string(preprocessed_roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789')
             text = text.strip()
             
-            if len(text) >= 7 and text.isdigit():
+            if len(text) >= 1 and text.isdigit():
+                save_roi(blurred_roi, f"{i}_blurr_roi.png")
+                save_roi(binary_roi, f"{i}_thresh_roi.png")
+                save_roi(closed_roi, f"{i}_morph_roi.png")
+                save_roi(eroded_roi, f"{i}_eroded_roi.png")
+                
+            if len(text) >= 8 and text.isdigit():
                 detected_numbers.append(text)
     
     return output_image, detected_numbers
@@ -101,7 +103,7 @@ def process_video():
         print("Ошибка загрузки видео. Проверьте путь и попробуйте снова.")
         return
     
-    frame_skip = 5
+    frame_skip = 10
     frame_count = 0
     
     while True:
@@ -125,6 +127,42 @@ def process_video():
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+    
+    cap.release()
+    cv2.destroyAllWindows()
+
+def process_selected_frame():
+    video_path = input("Введите путь к видео: ")
+    cap = cv2.VideoCapture(video_path)
+    
+    if not cap.isOpened():
+        print("Ошибка загрузки видео. Проверьте путь и попробуйте снова.")
+        return
+    
+    frame_count = 0
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Видео закончилось или произошла ошибка чтения.")
+            break
+        
+        frame_count += 1
+        
+        cv2.imshow("Video", frame)
+        
+        key = cv2.waitKey(1) & 0xFF
+        
+        if key == ord('q'):
+            break
+        elif key == ord(' '):
+            processed_image = preprocess_image(frame)
+            _, detected_numbers = find_and_draw_digits(frame, processed_image)
+            
+            if detected_numbers:
+                print(f"Кадр {frame_count}: Номер вагона виден: {detected_numbers}")
+            else:
+                print(f"Кадр {frame_count}: Номер вагона не виден")
     
     cap.release()
     cv2.destroyAllWindows()
@@ -159,7 +197,8 @@ def main():
         print("Выберите режим:")
         print("1. Обработка изображения")
         print("2. Обработка видео")
-        print("3. Выход")
+        print("3. Запуск видео и обработка выбранных кадров.")
+        print("4. Выход")
         choice = input("Введите номер режима: ")
         
         if choice == '1':
@@ -167,6 +206,8 @@ def main():
         elif choice == '2':
             process_video()
         elif choice == '3':
+            process_selected_frame()
+        elif choice == '4':
             print("Выход из программы.")
             break
         else:
