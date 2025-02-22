@@ -148,6 +148,7 @@ def process_selected_frame():
             break
         
         frame_count += 1
+        paused = False
         
         cv2.imshow("Video", frame)
         
@@ -155,6 +156,7 @@ def process_selected_frame():
         
         if key == ord('q'):
             break
+
         elif key == ord(' '):
             processed_image = preprocess_image(frame)
             _, detected_numbers = find_and_draw_digits(frame, processed_image)
@@ -163,7 +165,14 @@ def process_selected_frame():
                 print(f"Кадр {frame_count}: Номер вагона виден: {detected_numbers}")
             else:
                 print(f"Кадр {frame_count}: Номер вагона не виден")
-    
+
+        elif key == ord('p'):
+            paused = not paused
+            if paused:
+                print("Видео на паузе. Нажмите 'p', чтобы продолжить.")
+            else:
+                print("Воспроизведение возобновлено.")
+                
     cap.release()
     cv2.destroyAllWindows()
 
