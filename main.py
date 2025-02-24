@@ -66,15 +66,15 @@ def find_and_draw_digits(image, processed_image):
             clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
             equalized_roi = clahe.apply(smoothed_roi) # gray_roi
             
-            blurred_roi = cv2.GaussianBlur(equalized_roi, (3, 3), 6)
+            blurred_roi = cv2.GaussianBlur(equalized_roi, (3, 3), 5)
 
             binary_roi = cv2.adaptiveThreshold(equalized_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 27, 7)
 
             kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-            closed_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, kernel_close, iterations=2) #1
+            closed_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, kernel_close, iterations=1)
 
             kernel_erode = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-            eroded_roi = cv2.erode(closed_roi, kernel_erode, iterations=3)
+            eroded_roi = cv2.erode(closed_roi, kernel_erode, iterations=2)
             
             scale_factor = 2
             resized_roi = cv2.resize(eroded_roi, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LINEAR)
@@ -90,7 +90,7 @@ def find_and_draw_digits(image, processed_image):
                 save_roi(closed_roi, f"{i}_morph_roi.png")
                 save_roi(eroded_roi, f"{i}_eroded_roi.png")
                 
-            if len(text) >= 8 and text.isdigit():
+            if len(text) >= 6 and text.isdigit():
                 detected_numbers.append(text)
     
     return output_image, detected_numbers
@@ -139,7 +139,11 @@ def process_selected_frame():
         print("Ошибка загрузки видео. Проверьте путь и попробуйте снова.")
         return
     
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    delay = int(1000 / fps)
+
     frame_count = 0
+    paused = False
     
     while True:
         ret, frame = cap.read()
@@ -148,11 +152,10 @@ def process_selected_frame():
             break
         
         frame_count += 1
-        paused = False
         
         cv2.imshow("Video", frame)
         
-        key = cv2.waitKey(1) & 0xFF
+        key = cv2.waitKey(delay if not paused else 0) & 0xFF
         
         if key == ord('q'):
             break
