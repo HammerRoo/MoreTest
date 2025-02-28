@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import os
 import pytesseract
+from collections import OrderedDict
 
 pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
 
@@ -22,31 +23,39 @@ def save_roi(image, name):
 
 def preprocess_image(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    #save_image(gray, "1_gray.png")
+    save_image(gray, "1_gray.png")
 
-    blurred = cv2.GaussianBlur(gray, (11, 11), 7)
-    #save_image(blurred, "2_blurred.png")
+    blurred = cv2.GaussianBlur(gray, (11, 11), 6)
+    save_image(blurred, "2_blurred.png")
 
     thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                   cv2.THRESH_BINARY_INV, 11, 2) # 11,2 стандарт, 19,3 также хороший результат
-    #save_image(thresh, "3_thresh.png")
+                                   cv2.THRESH_BINARY_INV, 11, 2)
+    save_image(thresh, "3_thresh.png")
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
     opened = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
-    #save_image(opened, "4_opened.png")
+    save_image(opened, "4_opened.png")
 
-    closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel, iterations=3) # на 3 видно рамкой весь номер, на 2 по отдельности цифры
+    #closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=1)
     #save_image(closed, "5_closed.png")
 
-    dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
-    dilated = cv2.dilate(closed, dilated_kernel, iterations=4)
-    #save_image(dilated, "6_dilated.png")
+    dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)) # 7, 7
+    dilated = cv2.dilate(opened, dilated_kernel, iterations=4)
+    save_image(dilated, "6_dilated.png")
+
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    output_image = image.copy()
+
+    for i, contour in enumerate(contours):
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.rectangle(output_image, (x, y), (x+w, y+h), (255, 0, 0), 2)
+
+    save_image(output_image, "7_result.jpg")
 
     return dilated
 
 def find_and_draw_digits(image, processed_image):
     contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
     output_image = image.copy()
     detected_numbers = []
 
@@ -54,46 +63,76 @@ def find_and_draw_digits(image, processed_image):
         x, y, w, h = cv2.boundingRect(contour)
         area = cv2.contourArea(contour)
 
-        if area > 100:
-            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            
-            roi = image[y:y+h, x:x+w]
-            
-            gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        if area < 100:
+            continue
 
-            smoothed_roi = cv2.bilateralFilter(gray_roi, d=5, sigmaColor=50, sigmaSpace=50)
+        roi = image[y:y+h, x:x+w]
+        text_clean = pytesseract.image_to_string(
+            roi, 
+            config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
+        ).strip()
+        if len(text_clean) >= 7 and text_clean.isdigit():
+            detected_numbers.append(text_clean)
+            cv2.rectangle(output_image, (x, y), (x+w, y+h), (255, 0, 0), 2)
+            print(f"Номер найден на original_roi: {text_clean}")
+            continue
+        save_roi(roi, f"{i}_original_roi.png")
 
-            clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
-            equalized_roi = clahe.apply(smoothed_roi) # gray_roi
-            
-            blurred_roi = cv2.GaussianBlur(equalized_roi, (3, 3), 5)
+        roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        text_gray = pytesseract.image_to_string(
+            roi_gray, 
+            config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
+        ).strip()
+        if len(text_gray) >= 7 and text_gray.isdigit():
+            detected_numbers.append(text_gray)
+            cv2.rectangle(output_image, (x, y), (x+w, y+h), (255, 0, 0), 2)
+            print(f"Номер найден на gray_roi: {text_gray}")
+            continue
+        save_roi(roi_gray, f"{i}_gray_roi.png")
 
-            binary_roi = cv2.adaptiveThreshold(equalized_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 27, 7)
+        binary_roi = cv2.adaptiveThreshold(
+            roi_gray, 
+            255, 
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+            cv2.THRESH_BINARY_INV, 
+            21,
+            10
+        )
+        text_binary = pytesseract.image_to_string(
+            binary_roi, 
+            config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
+        ).strip()
+        if len(text_binary) >= 7 and text_binary.isdigit():
+            detected_numbers.append(text_binary)
+            cv2.rectangle(output_image, (x, y), (x+w, y+h), (255, 0, 0), 2)
+            print(f"Номер найден на binary_roi: {text_binary}")
+            continue
+        save_roi(binary_roi, f"{i}_binary_roi.png")
 
-            kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-            closed_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, kernel_close, iterations=1)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        morph_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, kernel, iterations=2)
+        save_roi(morph_roi, f"{i}_morph_close_roi.png")
+        
+        morph_roi = cv2.morphologyEx(morph_roi, cv2.MORPH_OPEN, kernel, iterations=1)
+        save_roi(morph_roi, f"{i}_morph_open_roi.png")
 
-            kernel_erode = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-            eroded_roi = cv2.erode(closed_roi, kernel_erode, iterations=2)
-            
-            scale_factor = 2
-            resized_roi = cv2.resize(eroded_roi, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LINEAR)
+        scale_factor = max(2, int(300 / max(w, h)))
+        resized_roi = cv2.resize(morph_roi, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
+        save_roi(resized_roi, f"{i}_resized_roi.png")
 
-            preprocessed_roi = resized_roi
+        text_processed = pytesseract.image_to_string(
+            resized_roi, 
+            config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
+        ).strip()
 
-            text = pytesseract.image_to_string(preprocessed_roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789')
-            text = text.strip()
-            
-            if len(text) >= 1 and text.isdigit():
-                save_roi(blurred_roi, f"{i}_blurr_roi.png")
-                save_roi(binary_roi, f"{i}_thresh_roi.png")
-                save_roi(closed_roi, f"{i}_morph_roi.png")
-                save_roi(eroded_roi, f"{i}_eroded_roi.png")
-                
-            if len(text) >= 6 and text.isdigit():
-                detected_numbers.append(text)
-    
-    return output_image, detected_numbers
+        if len(text_processed) >= 6 and text_processed.isdigit():
+            detected_numbers.append(text_processed)
+            cv2.rectangle(output_image, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            print(f"Номер найден после предобработки: {text_processed}")
+        else:
+            cv2.rectangle(output_image, (x, y), (x+w, y+h), (0, 0, 255), 1)
+
+    return list(OrderedDict.fromkeys(detected_numbers))
 
 def process_video():
     video_path = input("Введите путь к видео: ")
@@ -118,7 +157,7 @@ def process_video():
         
         if frame_count % frame_skip == 0:
             processed_image = preprocess_image(frame)
-            _, detected_numbers = find_and_draw_digits(frame, processed_image)
+            detected_numbers = find_and_draw_digits(frame, processed_image)
             
             if detected_numbers:
                 print(f"Кадр {frame_count}: Номер вагона виден: {detected_numbers}")
@@ -162,12 +201,12 @@ def process_selected_frame():
 
         elif key == ord(' '):
             processed_image = preprocess_image(frame)
-            _, detected_numbers = find_and_draw_digits(frame, processed_image)
+            # detected_numbers = find_and_draw_digits(frame, processed_image)
             
-            if detected_numbers:
-                print(f"Кадр {frame_count}: Номер вагона виден: {detected_numbers}")
-            else:
-                print(f"Кадр {frame_count}: Номер вагона не виден")
+            # if detected_numbers:
+            #     print(f"Кадр {frame_count}: Номер вагона виден: {detected_numbers}")
+            # else:
+            #     print(f"Кадр {frame_count}: Номер вагона не виден")
 
         elif key == ord('p'):
             paused = not paused
@@ -195,9 +234,7 @@ def process_image():
         
         processed_image = preprocess_image(image)
         
-        result_image, detected_numbers = find_and_draw_digits(image, processed_image)
-        
-        save_image(result_image, "7_result.jpg")
+        detected_numbers = find_and_draw_digits(image, processed_image)
 
         if detected_numbers:
             print("Номер вагона виден: ", detected_numbers)
