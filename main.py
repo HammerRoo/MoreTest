@@ -114,6 +114,14 @@ def find_and_draw_digits(image, processed_image):
             kernel,
             iterations=3
         )
+        text_close = pytesseract.image_to_string(
+            morph_roi, 
+            config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
+        ).strip()
+        if len(text_close) >= 7 and text_close.isdigit():
+            detected_numbers.append(text_close)
+            print(f"Номер найден на binary_roi: {text_close}")
+            continue
         save_roi(morph_roi, f"4_{i}_morph_close_roi.png")
         
         morph_roi = cv2.morphologyEx(
@@ -122,21 +130,29 @@ def find_and_draw_digits(image, processed_image):
             kernel,
             iterations=2
         )
-        save_roi(morph_roi, f"5_{i}_morph_open_roi_2.png")
-
-        scale_factor = 2
-        resized_roi = cv2.resize(
-            morph_roi,
-            None,
-            fx=scale_factor,
-            fy=scale_factor,
-            interpolation=cv2.INTER_CUBIC
-        )
-
-        text_processed = pytesseract.image_to_string(
-            resized_roi, 
+        text_open = pytesseract.image_to_string(
+            morph_roi, 
             config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
         ).strip()
+        if len(text_open) >= 7 and text_open.isdigit():
+            detected_numbers.append(text_open)
+            print(f"Номер найден на binary_roi: {text_open}")
+            continue
+        save_roi(morph_roi, f"5_{i}_morph_open_roi_2.png")
+
+        # scale_factor = 2
+        # resized_roi = cv2.resize(
+        #     morph_roi,
+        #     None,
+        #     fx=scale_factor,
+        #     fy=scale_factor,
+        #     interpolation=cv2.INTER_CUBIC
+        # )
+
+        text_processed = pytesseract.image_to_string(
+            morph_roi, 
+            config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
+        ).strip() # resized_roi
 
         if len(text_processed) >= 6 and text_processed.isdigit():
             detected_numbers.append(text_processed)
