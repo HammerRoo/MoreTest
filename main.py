@@ -25,7 +25,7 @@ def preprocess_image(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     save_image(gray, "1_gray.png")
 
-    blurred = cv2.GaussianBlur(gray, (11, 11), 6)
+    blurred = cv2.GaussianBlur(gray, (11, 11), 7) # 6
     save_image(blurred, "2_blurred.png")
 
     thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
@@ -36,12 +36,10 @@ def preprocess_image(image):
     opened = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
     save_image(opened, "4_opened.png")
 
-    #closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=1)
-    #save_image(closed, "5_closed.png")
 
     dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)) # 7, 7
-    dilated = cv2.dilate(opened, dilated_kernel, iterations=4)
-    save_image(dilated, "6_dilated.png")
+    dilated = cv2.dilate(opened, dilated_kernel, iterations=5) # 4
+    save_image(dilated, "5_dilated.png")
 
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     output_image = image.copy()
@@ -50,7 +48,7 @@ def preprocess_image(image):
         x, y, w, h = cv2.boundingRect(contour)
         cv2.rectangle(output_image, (x, y), (x+w, y+h), (255, 0, 0), 2)
 
-    save_image(output_image, "7_result.jpg")
+    save_image(output_image, "6_result.jpg")
 
     return dilated
 
