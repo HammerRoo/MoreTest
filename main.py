@@ -70,7 +70,7 @@ def find_and_draw_digits(image, processed_image):
         ).strip()
         if len(text_clean) >= 4 and text_clean.isdigit():
             detected_numbers.append(text_clean)
-            print(f"Номер найден на original_roi: {text_clean}")
+            print(f"Номер найден на original_roi")
             save_roi(roi, f"1_{i}_original_roi.png")
             continue
         save_roi(roi, f"1_{i}_original_roi.png")
@@ -82,35 +82,48 @@ def find_and_draw_digits(image, processed_image):
         ).strip()
         if len(text_gray) >= 4 and text_gray.isdigit():
             detected_numbers.append(text_gray)
-            print(f"Номер найден на gray_roi: {text_gray}")
+            print(f"Номер найден на gray_roi")
             save_roi(roi_gray, f"2_{i}_gray_roi.png")
             continue
         save_roi(roi_gray, f"2_{i}_gray_roi.png")
 
-        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 10)
+        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 9)
         text_binary = pytesseract.image_to_string(
             binary_roi, 
             config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
         ).strip()
         if len(text_binary) >= 4 and text_binary.isdigit():
             detected_numbers.append(text_binary)
-            print(f"Номер найден на binary_roi: {text_binary}")
+            print(f"Номер найден на binary_roi")
             save_roi(binary_roi, f"3_{i}_binary_roi.png")
             continue
         save_roi(binary_roi, f"3_{i}_binary_roi.png")
 
         erosed_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-        erosed_roi = cv2.dilate(binary_roi, erosed_kernel, iterations=1)
+        erosed_roi = cv2.erode(binary_roi, erosed_kernel, iterations=1)
         text_erose = pytesseract.image_to_string(
             erosed_roi, 
             config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
         ).strip()
         if len(text_erose) >= 4 and text_erose.isdigit():
             detected_numbers.append(text_erose)
-            print(f"Номер найден на erose_roi: {text_erose}")
+            print(f"Номер найден на erose_roi")
             save_roi(erosed_roi, f"4_{i}_erosed_roi.png")
             continue
         save_roi(erosed_roi, f"4_{i}_erosed_roi.png")
+
+        dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=2)
+        text_dilate = pytesseract.image_to_string(
+            dilated_roi, 
+            config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
+        ).strip()
+        if len(text_dilate) >= 4 and text_dilate.isdigit():
+            detected_numbers.append(text_dilate)
+            print(f"Номер найден на dilate_roi")
+            save_roi(dilated_roi, f"5_{i}_dilated_roi.png")
+            continue
+        save_roi(dilated_roi, f"5_{i}_dilated_roi.png")
 
         close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
         morph_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, close_kernel, iterations=4)
@@ -120,10 +133,10 @@ def find_and_draw_digits(image, processed_image):
         ).strip()
         if len(text_close) >= 4 and text_close.isdigit():
             detected_numbers.append(text_close)
-            print(f"Номер найден на close_roi: {text_close}")
-            save_roi(morph_roi, f"5_{i}_morph_close_roi.png")
+            print(f"Номер найден на close_roi")
+            save_roi(morph_roi, f"6_{i}_morph_close_roi.png")
             continue
-        save_roi(morph_roi, f"5_{i}_morph_close_roi.png")
+        save_roi(morph_roi, f"6_{i}_morph_close_roi.png")
 
         open_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
         morph_roi = cv2.morphologyEx(morph_roi, cv2.MORPH_OPEN, open_kernel, iterations=1)
@@ -133,10 +146,10 @@ def find_and_draw_digits(image, processed_image):
         ).strip()
         if len(text_open) >= 4 and text_open.isdigit():
             detected_numbers.append(text_open)
-            print(f"Номер найден на open_roi: {text_open}")
-            save_roi(morph_roi, f"6_{i}_morph_open_roi_2.png")
+            print(f"Номер найден на open_roi")
+            save_roi(morph_roi, f"7_{i}_morph_open_roi_2.png")
             continue
-        save_roi(morph_roi, f"6_{i}_morph_open_roi_2.png")
+        save_roi(morph_roi, f"7_{i}_morph_open_roi_2.png")
 
         # scale_factor = 2
         # resized_roi = cv2.resize(
@@ -150,11 +163,11 @@ def find_and_draw_digits(image, processed_image):
         text_processed = pytesseract.image_to_string(
             morph_roi, 
             config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
-        ).strip() # resized_roi
+        ).strip()
 
         if len(text_processed) >= 6 and text_processed.isdigit():
             detected_numbers.append(text_processed)
-            print(f"Номер найден после предобработки: {text_processed}")
+            print(f"Номер найден после предобработки")
 
     return list(OrderedDict.fromkeys(detected_numbers))
 
@@ -184,9 +197,9 @@ def process_video():
             detected_numbers = find_and_draw_digits(frame, processed_image)
             
             if detected_numbers:
-                print(f"Кадр {frame_count}: Номер вагона виден: {detected_numbers}")
+                print(f"Номер вагона виден")
             else:
-                print(f"Кадр {frame_count}: Номер вагона не виден")
+                print(f"Номер вагона не виден")
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -228,9 +241,9 @@ def process_selected_frame():
             detected_numbers = find_and_draw_digits(frame, processed_image)
             
             if detected_numbers:
-                print(f"Кадр {frame_count}: Номер вагона виден: {detected_numbers}")
+                print(f"Номер вагона виден")
             else:
-                print(f"Кадр {frame_count}: Номер вагона не виден")
+                print(f"Номер вагона не виден")
 
         elif key == ord('p'):
             paused = not paused
@@ -261,7 +274,7 @@ def process_image():
         detected_numbers = find_and_draw_digits(image, processed_image)
 
         if detected_numbers:
-            print("Номер вагона виден: ", detected_numbers)
+            print("Номер вагона виден")
         else:
             print("Номер вагона не виден")
 
