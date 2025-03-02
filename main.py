@@ -11,6 +11,33 @@ roi_folder = os.path.join(output_folder, "roi")
 os.makedirs(output_folder, exist_ok=True)
 os.makedirs(roi_folder, exist_ok=True)
 
+import cv2
+import numpy as np
+
+import cv2
+import numpy as np
+
+def correct_distortion(frame, strength=0.5):
+    h, w = frame.shape[:2]
+    
+    map_x = np.zeros((h, w), dtype=np.float32)
+    map_y = np.zeros((h, w), dtype=np.float32)
+    
+    for i in range(h):
+        for j in range(w):
+            x = (j - w / 2) / (w / 2)
+            y = (i - h / 2) / (h / 2)
+            
+            r = np.sqrt(x**2 + y**2)
+            theta = 1.0 / (1.0 + strength * r**2)
+            
+            map_x[i, j] = (x * theta + 1) * (w / 2)
+            map_y[i, j] = (y * theta + 1) * (h / 2)
+    
+    corrected_frame = cv2.remap(frame, map_x, map_y, interpolation=cv2.INTER_LINEAR)
+    
+    return corrected_frame
+
 def save_image(image, name):
     path = os.path.join(output_folder, name)
     cv2.imwrite(path, image)
@@ -99,18 +126,18 @@ def find_and_draw_digits(image, processed_image):
             continue
         save_roi(binary_roi, f"3_{i}_binary_roi.png")
 
-        erosed_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-        erosed_roi = cv2.erode(binary_roi, erosed_kernel, iterations=1)
-        text_erose = pytesseract.image_to_string(
-            erosed_roi, 
-            config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
-        ).strip()
-        if len(text_erose) >= 4 and text_erose.isdigit():
-            detected_numbers.append(text_erose)
-            print(f"Номер найден на erose_roi")
-            save_roi(erosed_roi, f"4_{i}_erosed_roi.png")
-            continue
-        save_roi(erosed_roi, f"4_{i}_erosed_roi.png")
+        # erosed_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        # erosed_roi = cv2.erode(binary_roi, erosed_kernel, iterations=1)
+        # text_erose = pytesseract.image_to_string(
+        #     erosed_roi, 
+        #     config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
+        # ).strip()
+        # if len(text_erose) >= 4 and text_erose.isdigit():
+        #     detected_numbers.append(text_erose)
+        #     print(f"Номер найден на erose_roi")
+        #     save_roi(erosed_roi, f"4_{i}_erosed_roi.png")
+        #     continue
+        # save_roi(erosed_roi, f"4_{i}_erosed_roi.png")
 
         dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
         dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=2)
@@ -126,7 +153,7 @@ def find_and_draw_digits(image, processed_image):
         save_roi(dilated_roi, f"5_{i}_dilated_roi.png")
 
         close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-        morph_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, close_kernel, iterations=4)
+        morph_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, close_kernel, iterations=5)
         text_close = pytesseract.image_to_string(
             morph_roi, 
             config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'
@@ -221,6 +248,8 @@ def process_selected_frame():
     frame_count = 0
     paused = False
     
+    #distortion_strength = 0.7
+
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -229,7 +258,9 @@ def process_selected_frame():
         
         frame_count += 1
         
-        cv2.imshow("Video", frame)
+        #corrected_frame = correct_distortion(frame, distortion_strength)
+
+        cv2.imshow("Video", frame) #corrected_frame
         
         key = cv2.waitKey(delay if not paused else 0) & 0xFF
         
@@ -237,8 +268,8 @@ def process_selected_frame():
             break
 
         elif key == ord(' '):
-            processed_image = preprocess_image(frame)
-            detected_numbers = find_and_draw_digits(frame, processed_image)
+            processed_image = preprocess_image(frame) #corrected_frame
+            detected_numbers = find_and_draw_digits(frame, processed_image) #corrected_frame
             
             if detected_numbers:
                 print(f"Номер вагона виден")
