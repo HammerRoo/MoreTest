@@ -7,13 +7,15 @@ from collections import OrderedDict
 pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
 
 output_folder = "output_images"
-data_set_folder = "data_set"
+raw_data_set_folder = "raw_data_set"
+prep_data_set_folder = "prep_data_set"
 got_num_folder = "got_num"
 no_num_folder = "no_num"
 roi_folder = os.path.join(output_folder, "roi")
 os.makedirs(output_folder, exist_ok=True)
 os.makedirs(roi_folder, exist_ok=True)
-os.makedirs(data_set_folder, exist_ok=True)
+os.makedirs(raw_data_set_folder, exist_ok=True)
+os.makedirs(prep_data_set_folder, exist_ok=True)
 os.makedirs(got_num_folder, exist_ok=True)
 os.makedirs(no_num_folder, exist_ok=True)
 
@@ -36,22 +38,26 @@ def preprocess_image(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     save_to_folder(gray, output_folder, "1_gray.png")
 
-    blurred = cv2.GaussianBlur(gray, (11, 11), 7)
+    blurred = cv2.GaussianBlur(gray, (9, 9), 7)
     save_to_folder(blurred, output_folder, "2_blurred.png")
 
     thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                   cv2.THRESH_BINARY_INV, 11, 2)
+                                   cv2.THRESH_BINARY_INV, 21, 5) # 11.2; 31.7
     save_to_folder(thresh, output_folder, "3_thresh.png")
 
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
     opened = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
     save_to_folder(opened, output_folder, "4_opened.png")
 
-    dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
-    dilated = cv2.dilate(opened, dilated_kernel, iterations=4)
+    dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)) #9.9
+    dilated = cv2.dilate(opened, dilated_kernel, iterations=4) #4
     save_to_folder(dilated, output_folder, "5_dilated.png")
 
-    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    # closed = cv2.morphologyEx(dilated, cv2.MORPH_CLOSE, close_kernel, iterations=2)
+    # save_to_folder(dilated, output_folder, "6_closed.png")
+
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # closed
     output_image = image.copy()
 
     for i, contour in enumerate(contours):
