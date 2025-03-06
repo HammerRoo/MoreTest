@@ -129,7 +129,7 @@ def find_and_draw_digits(image, processed_image):
 
     return list(OrderedDict.fromkeys(detected_numbers))
 
-def process_video(video_path, process_frame_func):
+def process_video(video_path, process_frame_func, save_raw_and_prep=False):
     cap = cv2.VideoCapture(video_path)
     
     if not cap.isOpened():
@@ -142,22 +142,33 @@ def process_video(video_path, process_frame_func):
     frame_count = 0
     paused = False
 
+    save_count_1 = 1
+    save_count_2 = 1
+    
     while True:
         ret, frame = cap.read()
         if not ret:
             print("Видео закончилось или произошла ошибка чтения.")
             break
         
-        frame_count += 1
-
         cv2.imshow("Video", frame)
         
         key = cv2.waitKey(delay if not paused else 0) & 0xFF
         
         if key == ord('q'):
             break
+
         elif key == ord(' '):
+            save_to_folder(frame, raw_data_set_folder, f"{save_count_1}.png")
+            save_count_1 += 1
+            
+            if save_raw_and_prep:
+                processed_image = preprocess_image(frame)
+                save_to_folder(processed_image, prep_data_set_folder, f"{save_count_2}.png")
+                save_count_2 += 1
+                
             process_frame_func(frame)
+
         elif key == ord('p'):
             paused = not paused
             if paused:
@@ -178,10 +189,10 @@ def main():
         
         if choice == '1':
             video_path = input("Введите путь к видео: ")
-            process_video(video_path, preprocess_image)
+            process_video(video_path, preprocess_image, save_raw_and_prep=True)
         elif choice == '2':
             video_path = input("Введите путь к видео: ")
-            process_video(video_path, lambda frame: find_and_draw_digits(frame, preprocess_image(frame)))
+            process_video(video_path, lambda frame: find_and_draw_digits(frame, preprocess_image(frame)), save_raw_and_prep=False)
         elif choice == '3':
             print("Выход из программы.")
             break
