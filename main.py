@@ -9,6 +9,7 @@ pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
 output_folder = "output_images"
 raw_data_set_folder = "raw_data_set"
 prep_data_set_folder = "prep_data_set"
+cont_data_set_folder = "cont_data_set"
 got_num_folder = "got_num"
 no_num_folder = "no_num"
 roi_folder = os.path.join(output_folder, "roi")
@@ -16,6 +17,7 @@ os.makedirs(output_folder, exist_ok=True)
 os.makedirs(roi_folder, exist_ok=True)
 os.makedirs(raw_data_set_folder, exist_ok=True)
 os.makedirs(prep_data_set_folder, exist_ok=True)
+os.makedirs(cont_data_set_folder, exist_ok=True)
 os.makedirs(got_num_folder, exist_ok=True)
 os.makedirs(no_num_folder, exist_ok=True)
 
@@ -53,26 +55,24 @@ def preprocess_image(image):
     dilated = cv2.dilate(opened, dilated_kernel, iterations=4) #4
     save_to_folder(dilated, output_folder, "5_dilated.png")
 
-    # close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-    # closed = cv2.morphologyEx(dilated, cv2.MORPH_CLOSE, close_kernel, iterations=2)
-    # save_to_folder(dilated, output_folder, "6_closed.png")
-
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # closed
     output_image = image.copy()
 
-    for i, contour in enumerate(contours):
-        x, y, w, h = cv2.boundingRect(contour)
-        cv2.rectangle(output_image, (x, y), (x+w, y+h), (255, 0, 0), 2)
-
-    save_to_folder(output_image, output_folder, "6_result.jpg")
-
     return dilated
 
-def find_and_draw_digits(image, processed_image):
-    contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+def find_and_draw_digits(raw_image, processed_image, image_counter):
     detected_numbers = []
-    got_num = image.copy()
-    no_num = image.copy()
+    output_image = raw_image.copy()
+    got_num = raw_image.copy()
+    no_num = raw_image.copy()
+
+    contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.rectangle(output_image, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+    save_to_folder(output_image, cont_data_set_folder, f"{image_counter}.png")
 
     for i, contour in enumerate(contours):
         x, y, w, h = cv2.boundingRect(contour)
@@ -81,7 +81,7 @@ def find_and_draw_digits(image, processed_image):
         if area < 1000:
             continue
 
-        roi = image[y:y + h, x:x + w]
+        roi = raw_image[y:y + h, x:x + w]
 
         text_clean = process_roi(roi)
         if process_and_save_roi(roi, roi_folder, "1_original", i, text_clean):
@@ -188,7 +188,7 @@ def process_video(video_path, save_raw=False, save_prep=False, prep=False):
     cap.release()
     cv2.destroyAllWindows()
 
-def process_prep_images(save_results=False):
+def process_prep_images():
     raw_images = sorted(os.listdir(raw_data_set_folder), key=lambda x: int(x.split('.')[0]))
     prep_images = sorted(os.listdir(prep_data_set_folder), key=lambda x: int(x.split('.')[0]))
     
@@ -196,6 +196,8 @@ def process_prep_images(save_results=False):
         print("Ошибка: количество файлов в raw_data_set и prep_data_set не совпадает.")
         return
     
+    image_counter = 1
+
     for raw_name, prep_name in zip(raw_images, prep_images):
         raw_path = os.path.join(raw_data_set_folder, raw_name)
         prep_path = os.path.join(prep_data_set_folder, prep_name)
@@ -207,13 +209,14 @@ def process_prep_images(save_results=False):
             print(f"Ошибка загрузки изображений: {raw_name} или {prep_name}")
             continue
         
-        detected_numbers = find_and_draw_digits(raw_image, prep_image)
+        print(f"Обработка изображения {image_counter}: {raw_name}")
+        detected_numbers = find_and_draw_digits(raw_image, prep_image, image_counter)
         
-        if save_results:
-            if detected_numbers:
-                print(f"Найдены номера в {raw_name}: {detected_numbers}")
-            else:
-                print(f"Номера не найдены в {raw_name}.")
+        user_input = input("Нажмите Enter для продолжения или 'q' для выхода: ")
+        if user_input.lower() == 'q':
+            break
+        
+        image_counter += 1
 
 def main():
     while True:
