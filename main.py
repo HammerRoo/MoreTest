@@ -60,19 +60,19 @@ def preprocess_image(image):
 
     return dilated
 
-def find_and_draw_digits(raw_image, processed_image, image_counter):
-    detected_numbers = []
+def find_and_draw_digits(raw_image, processed_image, image_counter, save_results=True):
+    all_image = raw_image.copy()
     output_image = raw_image.copy()
-    got_num = raw_image.copy()
-    no_num = raw_image.copy()
 
     contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     for contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
-        cv2.rectangle(output_image, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        cv2.rectangle(all_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-    save_to_folder(output_image, cont_data_set_folder, f"{image_counter}.png")
+    save_to_folder(all_image, cont_data_set_folder, f"{image_counter}.png")
+
+    detected_numbers = []
 
     for i, contour in enumerate(contours):
         x, y, w, h = cv2.boundingRect(contour)
@@ -86,18 +86,21 @@ def find_and_draw_digits(raw_image, processed_image, image_counter):
         text_clean = process_roi(roi)
         if process_and_save_roi(roi, roi_folder, "1_original", i, text_clean):
             detected_numbers.append(text_clean)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
         roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         text_gray = process_roi(roi_gray)
         if process_and_save_roi(roi_gray, roi_folder, "2_gray", i, text_gray):
             detected_numbers.append(text_gray)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
-        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 9)
+        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 7)
         text_binary = process_roi(binary_roi)
         if process_and_save_roi(binary_roi, roi_folder, "3_binary", i, text_binary):
             detected_numbers.append(text_binary)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
         dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
@@ -105,6 +108,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter):
         text_dilate = process_roi(dilated_roi)
         if process_and_save_roi(dilated_roi, roi_folder, "5_dilated", i, text_dilate):
             detected_numbers.append(text_dilate)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
         close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
@@ -112,6 +116,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter):
         text_close = process_roi(morph_roi)
         if process_and_save_roi(morph_roi, roi_folder, "6_morph_close", i, text_close):
             detected_numbers.append(text_close)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
         open_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
@@ -119,13 +124,16 @@ def find_and_draw_digits(raw_image, processed_image, image_counter):
         text_open = process_roi(morph_roi)
         if process_and_save_roi(morph_roi, roi_folder, "7_morph_open", i, text_open):
             detected_numbers.append(text_open)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
-    # Сохраняем итоговые изображения
-    if detected_numbers:
-        save_to_folder(got_num, got_num_folder, f"got_num_{i}.png")
-    else:
-        save_to_folder(no_num, no_num_folder, f"no_num_{i}.png")
+    if save_results:
+        if detected_numbers:
+            save_to_folder(output_image, got_num_folder, f"{image_counter}.png")
+            print(f"Найдены номера в изображении {image_counter}: {detected_numbers}")
+        else:
+            save_to_folder(output_image, no_num_folder, f"{image_counter}.png")
+            print(f"Номера не найдены в изображении {image_counter}.")
 
     return list(OrderedDict.fromkeys(detected_numbers))
 
