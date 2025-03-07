@@ -129,7 +129,7 @@ def find_and_draw_digits(image, processed_image):
 
     return list(OrderedDict.fromkeys(detected_numbers))
 
-def process_video(video_path, process_frame_func, save_raw=False, save_prep=False, prep=False):
+def process_video(video_path, save_raw=False, save_prep=False, prep=False):
     cap = cv2.VideoCapture(video_path)
     
     if not cap.isOpened():
@@ -160,16 +160,23 @@ def process_video(video_path, process_frame_func, save_raw=False, save_prep=Fals
 
         elif key == ord(' '):
             if save_raw:
+                print("Сохранение оригинальных кадров включено")
                 save_to_folder(frame, raw_data_set_folder, f"{save_count_1}.png")
                 save_count_1 += 1
+            else:
+                print("Сохранение оригинальных кадров отключено")
             
             if prep:
+                print("Предобработка кадров включена")
                 processed_image = preprocess_image(frame)
                 if save_prep:
+                    print("Сохранение предобработанных кадров включена")
                     save_to_folder(processed_image, prep_data_set_folder, f"{save_count_2}.png")
                     save_count_2 += 1
-                
-            process_frame_func(frame)
+                else:
+                    print("Сохранение предобработанных кадров выключено")
+            else:
+                print("Предобработка кадров отключена")
 
         elif key == ord('p'):
             paused = not paused
@@ -181,6 +188,33 @@ def process_video(video_path, process_frame_func, save_raw=False, save_prep=Fals
     cap.release()
     cv2.destroyAllWindows()
 
+def process_prep_images(save_results=False):
+    raw_images = sorted(os.listdir(raw_data_set_folder), key=lambda x: int(x.split('.')[0]))
+    prep_images = sorted(os.listdir(prep_data_set_folder), key=lambda x: int(x.split('.')[0]))
+    
+    if len(raw_images) != len(prep_images):
+        print("Ошибка: количество файлов в raw_data_set и prep_data_set не совпадает.")
+        return
+    
+    for raw_name, prep_name in zip(raw_images, prep_images):
+        raw_path = os.path.join(raw_data_set_folder, raw_name)
+        prep_path = os.path.join(prep_data_set_folder, prep_name)
+        
+        raw_image = cv2.imread(raw_path)
+        prep_image = cv2.imread(prep_path, cv2.IMREAD_GRAYSCALE)
+        
+        if raw_image is None or prep_image is None:
+            print(f"Ошибка загрузки изображений: {raw_name} или {prep_name}")
+            continue
+        
+        detected_numbers = find_and_draw_digits(raw_image, prep_image)
+        
+        if save_results:
+            if detected_numbers:
+                print(f"Найдены номера в {raw_name}: {detected_numbers}")
+            else:
+                print(f"Номера не найдены в {raw_name}.")
+
 def main():
     while True:
         print("Выберите режим:")
@@ -191,10 +225,9 @@ def main():
         
         if choice == '1':
             video_path = input("Введите путь к видео: ")
-            process_video(video_path, preprocess_image, save_raw=False, save_prep=False, prep=False)
+            process_video(video_path, save_raw=False, save_prep=False, prep=False)
         elif choice == '2':
-            video_path = input("Введите путь к видео: ")
-            process_video(video_path, lambda frame: find_and_draw_digits(frame, preprocess_image(frame)), save_raw=False, save_prep=False, prep=False)
+            process_prep_images(save_results=True)
         elif choice == '3':
             print("Выход из программы.")
             break
