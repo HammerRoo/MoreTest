@@ -129,7 +129,7 @@ def find_and_draw_digits(image, processed_image):
 
     return list(OrderedDict.fromkeys(detected_numbers))
 
-def process_video(video_path, process_frame_func, save_raw_and_prep=False):
+def process_video(video_path, process_frame_func, save_raw=False, save_prep=False, prep=False):
     cap = cv2.VideoCapture(video_path)
     
     if not cap.isOpened():
@@ -159,13 +159,15 @@ def process_video(video_path, process_frame_func, save_raw_and_prep=False):
             break
 
         elif key == ord(' '):
-            save_to_folder(frame, raw_data_set_folder, f"{save_count_1}.png")
-            save_count_1 += 1
+            if save_raw:
+                save_to_folder(frame, raw_data_set_folder, f"{save_count_1}.png")
+                save_count_1 += 1
             
-            if save_raw_and_prep:
+            if prep:
                 processed_image = preprocess_image(frame)
-                save_to_folder(processed_image, prep_data_set_folder, f"{save_count_2}.png")
-                save_count_2 += 1
+                if save_prep:
+                    save_to_folder(processed_image, prep_data_set_folder, f"{save_count_2}.png")
+                    save_count_2 += 1
                 
             process_frame_func(frame)
 
@@ -182,17 +184,17 @@ def process_video(video_path, process_frame_func, save_raw_and_prep=False):
 def main():
     while True:
         print("Выберите режим:")
-        print("1. Кадр: выделение области")
+        print("1. Кадр: первичная предобработка")
         print("2. Кадр: поиск и выделение номера")
         print("3. Выход")
         choice = input("Введите номер режима: ")
         
         if choice == '1':
             video_path = input("Введите путь к видео: ")
-            process_video(video_path, preprocess_image, save_raw_and_prep=True)
+            process_video(video_path, preprocess_image, save_raw=False, save_prep=False, prep=False)
         elif choice == '2':
             video_path = input("Введите путь к видео: ")
-            process_video(video_path, lambda frame: find_and_draw_digits(frame, preprocess_image(frame)), save_raw_and_prep=False)
+            process_video(video_path, lambda frame: find_and_draw_digits(frame, preprocess_image(frame)), save_raw=False, save_prep=False, prep=False)
         elif choice == '3':
             print("Выход из программы.")
             break
