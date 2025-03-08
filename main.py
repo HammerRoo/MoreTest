@@ -26,7 +26,8 @@ def save_to_folder(image, folder, name):
     cv2.imwrite(path, image)
     print(f"Изображение сохранено: {path}")
 
-def process_roi(roi, config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'):
+# 6, 7, 8, 11
+def process_roi(roi, config='--psm 7 --oem 3 -c tessedit_char_whitelist=0123456789'): 
     text = pytesseract.image_to_string(roi, config=config).strip()
     return text if len(text) >= 5 and text.isdigit() else None
 
@@ -106,7 +107,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
             continue
 
         dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=1)
+        dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=2)
         text_dilate = process_roi(dilated_roi)
         if process_and_save_roi(dilated_roi, roi_folder, "5_dilated", i, text_dilate, save_roi_steps=False):
             print("Номер найден на DILATED")
