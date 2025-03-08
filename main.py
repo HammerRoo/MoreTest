@@ -194,6 +194,7 @@ def process_video(video_path, save_raw=False, save_prep=False, prep=False):
     cv2.destroyAllWindows()
 
 def process_prep_images():
+    steps = True
     raw_images = sorted(os.listdir(raw_data_set_folder), key=lambda x: int(x.split('.')[0]))
     prep_images = sorted(os.listdir(prep_data_set_folder), key=lambda x: int(x.split('.')[0]))
     
@@ -217,9 +218,10 @@ def process_prep_images():
         print(f"Обработка изображения {image_counter}: {raw_name}")
         detected_numbers = find_and_draw_digits(raw_image, prep_image, image_counter, False)
         
-        user_input = input("Нажмите Enter для продолжения или 'q' для выхода: ")
-        if user_input.lower() == 'q':
-            break
+        if steps:
+            user_input = input("Нажмите Enter для продолжения или 'q' для выхода: ")
+            if user_input.lower() == 'q':
+                break
         
         image_counter += 1
 
