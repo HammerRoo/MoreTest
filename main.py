@@ -44,19 +44,16 @@ def preprocess_image(image):
     save_to_folder(blurred, output_folder, "2_blurred.png")
 
     thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                   cv2.THRESH_BINARY_INV, 21, 5) # 11.2; 31.7
+                                   cv2.THRESH_BINARY_INV, 21, 5) # 31.7
     save_to_folder(thresh, output_folder, "3_thresh.png")
 
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
     opened = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
     save_to_folder(opened, output_folder, "4_opened.png")
 
-    dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)) #9.9
-    dilated = cv2.dilate(opened, dilated_kernel, iterations=4) #4
+    dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
+    dilated = cv2.dilate(opened, dilated_kernel, iterations=4)
     save_to_folder(dilated, output_folder, "5_dilated.png")
-
-    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # closed
-    output_image = image.copy()
 
     return dilated
 
