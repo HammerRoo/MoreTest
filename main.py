@@ -27,7 +27,7 @@ def save_to_folder(image, folder, name):
     print(f"Изображение сохранено: {path}")
 
 # 6, 7, 8, 11
-def process_roi(roi, config='--psm 7 --oem 3 -c tessedit_char_whitelist=0123456789'): 
+def process_roi(roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789'): 
     text = pytesseract.image_to_string(roi, config=config).strip()
     return text if len(text) >= 5 and text.isdigit() else None
 
@@ -107,7 +107,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
             continue
 
         dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=2)
+        dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=3)
         text_dilate = process_roi(dilated_roi)
         if process_and_save_roi(dilated_roi, roi_folder, "5_dilated", i, text_dilate, save_roi_steps=False):
             print("Номер найден на DILATED")
@@ -118,24 +118,24 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
         close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         morph_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, close_kernel, iterations=2)
         text_close = process_roi(morph_roi)
-        #save_to_folder(morph_roi, roi_folder, f"6_morph_close_{i}_roi.png")
-        if process_and_save_roi(morph_roi, roi_folder, "6_morph_close", i, text_close, save_roi_steps=False):
+        save_to_folder(morph_roi, roi_folder, f"6_morph_close_{i}_roi.png")
+        if process_and_save_roi(morph_roi, roi_folder, "6_morph_close", i, text_close, save_roi_steps=True):
             print("Номер найден на CLOSE")
             detected_numbers.append(text_close)
             cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
-        close_kernel2 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        morph_roi2 = cv2.morphologyEx(dilated_roi, cv2.MORPH_CLOSE, close_kernel2, iterations=2)
-        text_close2 = process_roi(morph_roi2)
-        #save_to_folder(morph_roi2, roi_folder, f"6_morph_close_{i}_roi.png")
-        if process_and_save_roi(morph_roi2, roi_folder, "6_morph_close", i, text_close2, save_roi_steps=False):
-            print("Номер найден на CLOSE")
-            detected_numbers.append(text_close2)
-            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            continue
+        # close_kernel2 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        # morph_roi2 = cv2.morphologyEx(dilated_roi, cv2.MORPH_CLOSE, close_kernel2, iterations=1)
+        # text_close2 = process_roi(morph_roi2)
+        # save_to_folder(morph_roi2, roi_folder, f"6_morph_close_{i}_roi.png")
+        # if process_and_save_roi(morph_roi2, roi_folder, "6_morph_close", i, text_close2, save_roi_steps=True):
+        #     print("Номер найден на CLOSE")
+        #     detected_numbers.append(text_close2)
+        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        #     continue
 
-        open_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        open_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         morph_roi = cv2.morphologyEx(morph_roi, cv2.MORPH_OPEN, open_kernel, iterations=1)
         text_open = process_roi(morph_roi)
         if process_and_save_roi(morph_roi, roi_folder, "7_morph_open", i, text_open, save_roi_steps=False):
