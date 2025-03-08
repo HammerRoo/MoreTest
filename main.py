@@ -83,26 +83,13 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
 
         roi = raw_image[y:y + h, x:x + w]
 
-        #text_clean = process_roi(roi)
-        # if process_and_save_roi(roi, roi_folder, "1_original", i, text_clean):
-        #     print("Номер найден на ORIGINAL")
-        #     detected_numbers.append(text_clean)
-        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        #     continue
-
         roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-        #text_gray = process_roi(roi_gray)
-        # if process_and_save_roi(roi_gray, roi_folder, "2_gray", i, text_gray):
-        #     print("Номер найден на GRAY")
-        #     detected_numbers.append(text_gray)
-        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        #     continue
 
         roi_clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(roi_gray)
         _, roi_otsu = cv2.threshold(roi_clahe, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
         text_otsu = process_roi(roi_otsu)
-        if process_and_save_roi(roi_otsu, roi_folder, "4_otsu", i, text_otsu, save_roi_steps=False):
+        if process_and_save_roi(roi_otsu, roi_folder, "1_otsu", i, text_otsu, save_roi_steps=False):
             print("Номер найден на OTSU")
             detected_numbers.append(text_otsu)
             cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -110,7 +97,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
 
         binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 7) # 31.5
         text_binary = process_roi(binary_roi)
-        if process_and_save_roi(binary_roi, roi_folder, "3_binary", i, text_binary, save_roi_steps=False):
+        if process_and_save_roi(binary_roi, roi_folder, "2_binary", i, text_binary, save_roi_steps=False):
             print("Номер найден на BINARY")
             detected_numbers.append(text_binary)
             cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -119,7 +106,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
         dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2)) #3.3
         dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=1) #3
         text_dilate = process_roi(dilated_roi)
-        if process_and_save_roi(dilated_roi, roi_folder, "5_dilated", i, text_dilate, save_roi_steps=False):
+        if process_and_save_roi(dilated_roi, roi_folder, "3_dilated", i, text_dilate, save_roi_steps=False):
             print("Номер найден на DILATED")
             detected_numbers.append(text_dilate)
             cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -128,27 +115,17 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
         close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         morph_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, close_kernel, iterations=2)
         text_close = process_roi(morph_roi)
-        save_to_folder(morph_roi, roi_folder, f"6_morph_close_{i}_roi.png")
-        if process_and_save_roi(morph_roi, roi_folder, "6_morph_close", i, text_close, save_roi_steps=False):
+        save_to_folder(morph_roi, roi_folder, f"4_morph_close_{i}_roi.png")
+        if process_and_save_roi(morph_roi, roi_folder, "4_morph_close", i, text_close, save_roi_steps=False):
             print("Номер найден на CLOSE")
             detected_numbers.append(text_close)
             cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
-        # close_kernel2 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        # morph_roi2 = cv2.morphologyEx(dilated_roi, cv2.MORPH_CLOSE, close_kernel2, iterations=1)
-        # text_close2 = process_roi(morph_roi2)
-        # save_to_folder(morph_roi2, roi_folder, f"6_morph_close_{i}_roi.png")
-        # if process_and_save_roi(morph_roi2, roi_folder, "6_morph_close", i, text_close2, save_roi_steps=True):
-        #     print("Номер найден на CLOSE")
-        #     detected_numbers.append(text_close2)
-        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        #     continue
-
         open_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         morph_roi = cv2.morphologyEx(morph_roi, cv2.MORPH_OPEN, open_kernel, iterations=1)
         text_open = process_roi(morph_roi)
-        if process_and_save_roi(morph_roi, roi_folder, "7_morph_open", i, text_open, save_roi_steps=False):
+        if process_and_save_roi(morph_roi, roi_folder, "5_morph_open", i, text_open, save_roi_steps=False):
             print("Номер найден на OPEN")
             detected_numbers.append(text_open)
             cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
