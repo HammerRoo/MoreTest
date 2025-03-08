@@ -1,0 +1,5 @@
+Total images = 186
+10% = 18.6
+80% = 148.8
+
+80 images detected now.
