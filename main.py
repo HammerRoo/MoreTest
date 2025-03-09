@@ -27,7 +27,7 @@ def save_to_folder(image, folder, name):
     print(f"Изображение сохранено: {path}")
 
 # 6, 7, 8, 11
-def process_roi(roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789'): 
+def process_roi(roi, config='--psm 11 --oem 3 -c tessedit_char_whitelist=0123456789'): 
     text = pytesseract.image_to_string(roi, config=config).strip()
     return text if len(text) >= 5 and text.isdigit() else None
 
@@ -87,8 +87,6 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
         # Серое изображение
         roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
-        roi_gray = cv2.medianBlur(roi_gray, 3)
-
         # Бинаризация через Otsu и Clahe
         roi_clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(roi_gray) # 2.0 ; 8, 8
         _, roi_otsu = cv2.threshold(roi_clahe, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
@@ -102,7 +100,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
 
         # Морфология для Otsu
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-        morph_otsu = cv2.morphologyEx(roi_otsu, cv2.MORPH_CLOSE, kernel, iterations=1)
+        morph_otsu = cv2.morphologyEx(roi_otsu, cv2.MORPH_CLOSE, kernel, iterations=2)
         morph_otsu = cv2.morphologyEx(morph_otsu, cv2.MORPH_OPEN, kernel, iterations=1)
 
         text_otsu_morph = process_roi(morph_otsu)
@@ -112,7 +110,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
             cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
-        vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 5))
+        vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 3))
         morph_otsu = cv2.morphologyEx(morph_otsu, cv2.MORPH_OPEN, vertical_kernel, iterations=1)
 
         text_otsu_morph = process_roi(morph_otsu)
@@ -135,7 +133,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
             continue
 
         # Морфология после Combined
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         morph_roi = cv2.morphologyEx(combined_roi, cv2.MORPH_CLOSE, kernel, iterations=1)
         morph_roi = cv2.morphologyEx(morph_roi, cv2.MORPH_OPEN, kernel, iterations=1)
 

@@ -2,5 +2,5 @@ Total images = 186
 10% = 18.6
 80% = 148.8
 
-113 images detected now.
-> 60% but need at least 80%
+149 images detected now.
+> 80%
