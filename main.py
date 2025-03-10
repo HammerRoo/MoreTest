@@ -295,7 +295,7 @@ def main():
         
         if choice == '1':
             video_path = input("Введите путь к видео: ")
-            process_video(video_path, save_raw=False, save_prep=False, prep=False)
+            process_video(video_path, save_raw=True, save_prep=True, prep=True)
         elif choice == '2':
             process_prep_images()
         elif choice == '3':
