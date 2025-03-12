@@ -10,8 +10,12 @@
 /got_num
 /no_num
 
-/data_set_images
-/prep_data_images
-/cont_data_images
-/got_num_final
-/no_num_final
+/raw_data_set_2
+/prep_data_set_2
+/cont_data_2
+/got_num_2
+/no_num_2
+
+/binary_roi
+/final
+/otsu_roi

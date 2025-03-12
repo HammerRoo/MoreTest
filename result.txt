@@ -3,4 +3,4 @@ Total images = 186
 80% = 148.8
 
 149 images detected now.
-> 80%
+= 80.1%
