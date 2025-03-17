@@ -44,7 +44,18 @@ os.makedirs(opened_roi_folder, exist_ok=True)
 closed_roi_folder = "no_num"
 os.makedirs(closed_roi_folder, exist_ok=True)
 
+def remove_distortion(image, k1=0.1, k2=0.01, p1=0.001, p2=0.001):
+    h, w = image.shape[:2]
 
+    camera_matrix = np.array([[w, 0, w / 2],
+                             [0, h, h / 2],
+                             [0, 0, 1]], dtype=np.float32)
+
+    dist_coeffs = np.array([k1, k2, p1, p2], dtype=np.float32)
+
+    undistorted_image = cv2.undistort(image, camera_matrix, dist_coeffs)
+
+    return undistorted_image
 
 def save_to_folder(image, folder, name):
     path = os.path.join(folder, name)
@@ -124,54 +135,54 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
             cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
-        # # Морфология для Otsu
-        # kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-        # morph_otsu = cv2.morphologyEx(roi_otsu, cv2.MORPH_CLOSE, kernel, iterations=2)
-        # morph_otsu = cv2.morphologyEx(morph_otsu, cv2.MORPH_OPEN, kernel, iterations=1)
+        # Морфология для Otsu
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        morph_otsu = cv2.morphologyEx(roi_otsu, cv2.MORPH_CLOSE, kernel, iterations=2)
+        morph_otsu = cv2.morphologyEx(morph_otsu, cv2.MORPH_OPEN, kernel, iterations=1)
 
-        # text_otsu_morph = process_roi(morph_otsu)
-        # if process_and_save_roi(morph_otsu, roi_folder, "2_otsu_morph", i, text_otsu_morph, save_roi_steps=True):
-        #     print("Номер найден на OTSU + MORPH")
-        #     detected_numbers.append(text_otsu_morph)
-        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        #     continue
+        text_otsu_morph = process_roi(morph_otsu)
+        if process_and_save_roi(morph_otsu, roi_folder, "2_otsu_morph", i, text_otsu_morph, save_roi_steps=True):
+            print("Номер найден на OTSU + MORPH")
+            detected_numbers.append(text_otsu_morph)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            continue
 
-        # vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 3))
-        # morph_otsu = cv2.morphologyEx(morph_otsu, cv2.MORPH_OPEN, vertical_kernel, iterations=1)
+        vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 3))
+        morph_otsu = cv2.morphologyEx(morph_otsu, cv2.MORPH_OPEN, vertical_kernel, iterations=1)
 
-        # text_otsu_morph = process_roi(morph_otsu)
-        # if process_and_save_roi(morph_otsu, roi_folder, "2_otsu_morph", i, text_otsu_morph, save_roi_steps=True):
-        #     print("Номер найден на OTSU + MORPH")
-        #     detected_numbers.append(text_otsu_morph)
-        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        #     continue
+        text_otsu_morph = process_roi(morph_otsu)
+        if process_and_save_roi(morph_otsu, roi_folder, "2_otsu_morph", i, text_otsu_morph, save_roi_steps=True):
+            print("Номер найден на OTSU + MORPH")
+            detected_numbers.append(text_otsu_morph)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            continue
 
-        # # Совмещение Otsu и Adaptive
-        # roi_adaptive = cv2.adaptiveThreshold(roi_clahe, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-        #                                      cv2.THRESH_BINARY_INV, 31, 5)
-        # combined_roi = cv2.bitwise_and(roi_otsu, roi_adaptive)
+        # Совмещение Otsu и Adaptive
+        roi_adaptive = cv2.adaptiveThreshold(roi_clahe, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                             cv2.THRESH_BINARY_INV, 31, 5)
+        combined_roi = cv2.bitwise_and(roi_otsu, roi_adaptive)
 
-        # text_combined = process_roi(combined_roi)
-        # if process_and_save_roi(combined_roi, roi_folder, "3_otsu", i, text_combined, save_roi_steps=False):
-        #     print("Номер найден на COMBINED")
-        #     detected_numbers.append(text_combined)
-        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        #     continue
+        text_combined = process_roi(combined_roi)
+        if process_and_save_roi(combined_roi, roi_folder, "3_otsu", i, text_combined, save_roi_steps=False):
+            print("Номер найден на COMBINED")
+            detected_numbers.append(text_combined)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            continue
 
-        # # Морфология после Combined
-        # kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        # morph_roi = cv2.morphologyEx(combined_roi, cv2.MORPH_CLOSE, kernel, iterations=1)
-        # morph_roi = cv2.morphologyEx(morph_roi, cv2.MORPH_OPEN, kernel, iterations=1)
+        # Морфология после Combined
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        morph_roi = cv2.morphologyEx(combined_roi, cv2.MORPH_CLOSE, kernel, iterations=1)
+        morph_roi = cv2.morphologyEx(morph_roi, cv2.MORPH_OPEN, kernel, iterations=1)
 
-        # text_commor = process_roi(morph_roi)
-        # if process_and_save_roi(morph_roi, roi_folder, "4_otsu_improved", i, text_commor, save_roi_steps=True):
-        #     print("Номер найден на MORPH COMBINED")
-        #     detected_numbers.append(text_commor)
-        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        text_commor = process_roi(morph_roi)
+        if process_and_save_roi(morph_roi, roi_folder, "4_otsu_improved", i, text_commor, save_roi_steps=True):
+            print("Номер найден на MORPH COMBINED")
+            detected_numbers.append(text_commor)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
         # Чистый Adaptive
-        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 5) # 21.7
+        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 7) # 21.7
         text_binary = process_roi(binary_roi)
         save_to_folder(binary_roi, binary_roi_folder, f"5_binary_{i}_{image_counter}.png")
         if process_and_save_roi(binary_roi, binary_roi_folder, "5_binary", i, text_binary, save_roi_steps=False):
@@ -180,36 +191,38 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
             cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             continue
 
-        # # Дилатация после Adaptive
-        # dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)) #3.3
-        # dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=3) #3
-        # text_dilate = process_roi(dilated_roi)
-        # if process_and_save_roi(dilated_roi, roi_folder, "6_dilated", i, text_dilate, save_roi_steps=False):
-        #     print("Номер найден на DILATED")
-        #     detected_numbers.append(text_dilate)
-        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        #     continue
+        # Дилатация после Adaptive
+        dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2)) #3.3
+        dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=2) #3
+        text_dilate = process_roi(dilated_roi)
+        #save_to_folder(dilated_roi, dilated_roi_folder, f"6_dilated_{i}_{image_counter}.png")
+        if process_and_save_roi(dilated_roi, roi_folder, "6_dilated", i, text_dilate, save_roi_steps=False):
+            print("Номер найден на DILATED")
+            detected_numbers.append(text_dilate)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            continue
 
-        # # Morph Close после Adaptive
-        # close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        # morph_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, close_kernel, iterations=1)
-        # text_close = process_roi(morph_roi)
-        # #save_to_folder(morph_roi, roi_folder, f"7_morph_close_{i}_roi.png")
-        # if process_and_save_roi(morph_roi, roi_folder, "7_morph_close", i, text_close, save_roi_steps=False):
-        #     print("Номер найден на CLOSE")
-        #     detected_numbers.append(text_close)
-        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        #     continue
+        # Morph Close после Adaptive
+        close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        morph_roi = cv2.morphologyEx(binary_roi, cv2.MORPH_CLOSE, close_kernel, iterations=1)
+        text_close = process_roi(morph_roi)
+        #save_to_folder(morph_roi, close_roi_folder, f"7_morph_close_{i}_{image_counter}.png")
+        if process_and_save_roi(morph_roi, roi_folder, "7_morph_close", i, text_close, save_roi_steps=False):
+            print("Номер найден на CLOSE")
+            detected_numbers.append(text_close)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            continue
 
-        # # Morph Open после Morph Close
-        # open_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        # morph_roi = cv2.morphologyEx(morph_roi, cv2.MORPH_OPEN, open_kernel, iterations=1)
-        # text_open = process_roi(morph_roi)
-        # if process_and_save_roi(morph_roi, roi_folder, "8_morph_open", i, text_open, save_roi_steps=False):
-        #     print("Номер найден на OPEN")
-        #     detected_numbers.append(text_open)
-        #     cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        #     continue
+        # Morph Open после Morph Close
+        open_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        morph_roi = cv2.morphologyEx(morph_roi, cv2.MORPH_OPEN, open_kernel, iterations=1)
+        text_open = process_roi(morph_roi)
+        #save_to_folder(morph_roi, open_roi_folder, f"8_morph_open_{i}_{image_counter}.png")
+        if process_and_save_roi(morph_roi, roi_folder, "8_morph_open", i, text_open, save_roi_steps=False):
+            print("Номер найден на OPEN")
+            detected_numbers.append(text_open)
+            cv2.rectangle(output_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            continue
 
     # Финальная проверка
     if detected_numbers:
@@ -242,8 +255,10 @@ def process_video(video_path, save_raw=False, save_prep=False, prep=False):
         if not ret:
             print("Видео закончилось или произошла ошибка чтения.")
             break
+
+        undistorted_frame = remove_distortion(frame)
         
-        cv2.imshow("Video", frame)
+        cv2.imshow("Undistorted Video", undistorted_frame)
         
         key = cv2.waitKey(delay if not paused else 0) & 0xFF
         
@@ -253,14 +268,14 @@ def process_video(video_path, save_raw=False, save_prep=False, prep=False):
         elif key == ord(' '):
             if save_raw:
                 print("Сохранение оригинальных кадров включено")
-                save_to_folder(frame, raw_data_set_folder, f"{save_count_1}.png")
+                save_to_folder(undistorted_frame, raw_data_set_folder, f"{save_count_1}.png")
                 save_count_1 += 1
             else:
                 print("Сохранение оригинальных кадров отключено")
             
             if prep:
                 print("Предобработка кадров включена")
-                processed_image = preprocess_image(frame)
+                processed_image = preprocess_image(undistorted_frame)
                 if save_prep:
                     print("Сохранение предобработанных кадров включена")
                     save_to_folder(processed_image, prep_data_set_folder, f"{save_count_2}.png")
@@ -279,6 +294,23 @@ def process_video(video_path, save_raw=False, save_prep=False, prep=False):
                 
     cap.release()
     cv2.destroyAllWindows()
+
+def process_single_image(image_path, save_results=False):
+    image = cv2.imread(image_path)
+    if image is None:
+        print(f"Ошибка загрузки изображения: {image_path}")
+        return
+
+    undistorted_image = remove_distortion(image)
+
+    processed_image = preprocess_image(undistorted_image)
+
+    detected_numbers = find_and_draw_digits(undistorted_image, processed_image, "single_image", save_results)
+
+    if detected_numbers:
+        print(f"Найдены номера: {detected_numbers}")
+    else:
+        print("Номера не найдены.")
 
 def process_prep_images():
     steps = False
@@ -335,7 +367,8 @@ def main():
         print("1. Кадр: первичная предобработка")
         print("2. Кадр: поиск и выделение номера")
         print("3. Кадр: обработка выбранного")
-        print("4. Выход")
+        print("4. Обработка отдельного изображения")
+        print("5. Выход")
         choice = input("Введите номер режима: ")
         
         if choice == '1':
@@ -346,10 +379,10 @@ def main():
         elif choice == '3':
             process_selected_images()
         elif choice == '4':
+            image_path = input("Введите путь к изображению: ")
+            process_single_image(image_path, save_results=True)
+        elif choice == '5':
             print("Выход из программы.")
-            break
-        elif choice == '4':
-            print("Отдельное изображение")
             break
         else:
             print("Неверный выбор. Попробуйте снова.")

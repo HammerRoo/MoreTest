@@ -4,3 +4,16 @@ Total images = 186
 
 149 images detected now.
 = 80.1%
+
+Possible solutions:
+1 Correct perspective
+    cv2.getPerspectiveTransform(src_points, dst_points)
+    or
+    Eliminate barrel distortion
+
+2 Align image contrast
+    use CLAHE method
+    or
+    manually
+
+Current progress: testing
