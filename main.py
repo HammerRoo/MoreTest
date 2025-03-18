@@ -44,7 +44,7 @@ os.makedirs(opened_roi_folder, exist_ok=True)
 closed_roi_folder = "no_num"
 os.makedirs(closed_roi_folder, exist_ok=True)
 
-def remove_distortion(image, k1=0.1, k2=0.01, p1=0.001, p2=0.001):
+def remove_distortion(image, k1=-0.45, k2=0.01, p1=0.001, p2=0.001):
     h, w = image.shape[:2]
 
     camera_matrix = np.array([[w, 0, w / 2],
