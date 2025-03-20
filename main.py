@@ -44,7 +44,7 @@ os.makedirs(opened_roi_folder, exist_ok=True)
 closed_roi_folder = "no_num"
 os.makedirs(closed_roi_folder, exist_ok=True)
 
-def remove_distortion(image, k1=-0.45, k2=0.01, p1=0.001, p2=0.001):
+def remove_distortion(image, k1=-0.53, k2=0.01, p1=0.001, p2=0.001):
     h, w = image.shape[:2]
 
     camera_matrix = np.array([[w, 0, w / 2],
@@ -55,6 +55,23 @@ def remove_distortion(image, k1=-0.45, k2=0.01, p1=0.001, p2=0.001):
 
     undistorted_image = cv2.undistort(image, camera_matrix, dist_coeffs)
 
+    # gray = cv2.cvtColor(undistorted_image, cv2.COLOR_BGR2GRAY)
+    # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    # contrast_enhanced = clahe.apply(gray)
+    # contrast_enhanced_bgr = cv2.cvtColor(contrast_enhanced, cv2.COLOR_GRAY2BGR)
+
+    # mask = np.zeros_like(gray)
+    # cv2.rectangle(mask, (0, 0), (w, h), 255, -1)
+    # cv2.ellipse(mask, (w // 2, h // 2), (w // 2, h // 2), 0, 0, 360, 0, -1)
+
+    # corners = cv2.bitwise_and(undistorted_image, undistorted_image, mask=255 - mask)
+
+    # sharpened_corners = cv2.filter2D(corners, -1, np.array([[-1, -1, -1],
+    #                                                         [-1,  9, -1],
+    #                                                         [-1, -1, -1]]))
+
+    # final_image = cv2.add(contrast_enhanced_bgr, sharpened_corners)
+
     return undistorted_image
 
 def save_to_folder(image, folder, name):
@@ -63,7 +80,7 @@ def save_to_folder(image, folder, name):
     print(f"Изображение сохранено: {path}")
 
 # 6, 7, 8, 11
-def process_roi(roi, config='--psm 11 --oem 3 -c tessedit_char_whitelist=0123456789'): 
+def process_roi(roi, config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'): 
     text = pytesseract.image_to_string(roi, config=config).strip()
     return text if len(text) >= 5 and text.isdigit() else None
 
@@ -117,8 +134,14 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
         if area < 1000:
             continue
 
+        #gray = cv2.cvtColor(raw_image, cv2.COLOR_BGR2GRAY)
+        #clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        #contrast_enhanced = clahe.apply(gray)
+
+        #contrast_enhanced_bgr = cv2.cvtColor(contrast_enhanced, cv2.COLOR_GRAY2BGR)
+
         # Текущая зона
-        roi = raw_image[y:y + h, x:x + w]
+        roi = raw_image[y:y + h, x:x + w] #raw_image
 
         # Серое изображение
         roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -128,7 +151,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
         _, roi_otsu = cv2.threshold(roi_clahe, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
         text_otsu = process_roi(roi_otsu)
-        save_to_folder(roi_otsu, otsu_roi_folder, f"1_otsu_{i}_{image_counter}.png")
+        #save_to_folder(roi_otsu, otsu_roi_folder, f"1_otsu_{i}_{image_counter}.png")
         if process_and_save_roi(roi_otsu, otsu_roi_folder, "1_otsu", i, text_otsu, save_roi_steps=False):
             print("Номер найден на OTSU")
             detected_numbers.append(text_otsu)
@@ -158,7 +181,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
             continue
 
         # Совмещение Otsu и Adaptive
-        roi_adaptive = cv2.adaptiveThreshold(roi_clahe, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+        roi_adaptive = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                              cv2.THRESH_BINARY_INV, 31, 5)
         combined_roi = cv2.bitwise_and(roi_otsu, roi_adaptive)
 
@@ -182,9 +205,9 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
             continue
 
         # Чистый Adaptive
-        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 7) # 21.7
+        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 9) # 21.7 roi_gray
         text_binary = process_roi(binary_roi)
-        save_to_folder(binary_roi, binary_roi_folder, f"5_binary_{i}_{image_counter}.png")
+        #save_to_folder(binary_roi, binary_roi_folder, f"5_binary_{i}_{image_counter}.png")
         if process_and_save_roi(binary_roi, binary_roi_folder, "5_binary", i, text_binary, save_roi_steps=False):
             print("Номер найден на BINARY")
             detected_numbers.append(text_binary)
@@ -193,7 +216,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
 
         # Дилатация после Adaptive
         dilated_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2)) #3.3
-        dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=2) #3
+        dilated_roi = cv2.dilate(binary_roi, dilated_kernel, iterations=1) #3
         text_dilate = process_roi(dilated_roi)
         #save_to_folder(dilated_roi, dilated_roi_folder, f"6_dilated_{i}_{image_counter}.png")
         if process_and_save_roi(dilated_roi, roi_folder, "6_dilated", i, text_dilate, save_roi_steps=False):

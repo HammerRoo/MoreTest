@@ -2,8 +2,8 @@ Total images = 186
 10% = 18.6
 80% = 148.8
 
-149 images detected now.
-= 80.1%
+172 images detected now.
+= 92%
 
 Possible solutions:
 1 Correct perspective
