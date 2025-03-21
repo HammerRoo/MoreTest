@@ -182,7 +182,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
 
         # Совмещение Otsu и Adaptive
         roi_adaptive = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                             cv2.THRESH_BINARY_INV, 31, 5)
+                                             cv2.THRESH_BINARY_INV, 31, 11)
         combined_roi = cv2.bitwise_and(roi_otsu, roi_adaptive)
 
         text_combined = process_roi(combined_roi)
@@ -205,7 +205,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
             continue
 
         # Чистый Adaptive
-        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 9) # 21.7 roi_gray
+        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 13) # 21.7 roi_gray
         text_binary = process_roi(binary_roi)
         #save_to_folder(binary_roi, binary_roi_folder, f"5_binary_{i}_{image_counter}.png")
         if process_and_save_roi(binary_roi, binary_roi_folder, "5_binary", i, text_binary, save_roi_steps=False):
@@ -265,7 +265,7 @@ def process_video(video_path, save_raw=False, save_prep=False, prep=False):
         return
     
     fps = cap.get(cv2.CAP_PROP_FPS)
-    delay = int(1000 / fps)
+    delay = int(1000 / fps) * 8
 
     frame_count = 0
     paused = False
