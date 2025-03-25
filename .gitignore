@@ -26,3 +26,5 @@
 /final
 /otsu_roi
 /dilated_roi
+
+/__pycache__
