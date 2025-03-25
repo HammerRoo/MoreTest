@@ -3,6 +3,7 @@ import numpy as np
 import os
 import pytesseract
 from collections import OrderedDict
+#from more import process_roi_nn
 
 pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
 
@@ -80,7 +81,7 @@ def save_to_folder(image, folder, name):
     print(f"Изображение сохранено: {path}")
 
 # 6, 7, 8, 11
-def process_roi(roi, config='--psm 6 --oem 3 -c tessedit_char_whitelist=0123456789'): 
+def process_roi(roi, config='--psm 8 --oem 3 -c tessedit_char_whitelist=0123456789'): 
     text = pytesseract.image_to_string(roi, config=config).strip()
     return text if len(text) >= 5 and text.isdigit() else None
 
@@ -112,9 +113,38 @@ def preprocess_image(image):
 
     return dilated
 
+# def find_and_draw_digits(raw_image, processed_image, image_counter, save_results=False):
+#     output_image = raw_image.copy()
+#     contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#     detected_numbers = []
+
+#     for i, contour in enumerate(contours):
+#         x, y, w, h = cv2.boundingRect(contour)
+#         area = cv2.contourArea(contour)
+#         if area < 1000 or not (0.2 < w/h < 5):  # Фильтр по соотношению сторон
+#             continue
+
+#         roi = raw_image[y:y+h, x:x+w]
+#         # Прогон через нейросеть
+#         numbers = process_roi_nn(roi)
+#         if numbers:
+#             detected_numbers.extend(numbers)
+#             cv2.rectangle(output_image, (x, y), (x+w, y+h), (0, 255, 0), 2)
+#             print(f"Номер найден: {numbers}")
+
+#     # Сохранение результата
+#     if detected_numbers:
+#         save_to_folder(output_image, got_num_folder, f"{image_counter}.png")
+#         print(f"Найдены номера: {detected_numbers}")
+#     else:
+#         save_to_folder(output_image, no_num_folder, f"{image_counter}.png")
+#     return detected_numbers
+
 def find_and_draw_digits(raw_image, processed_image, image_counter, save_results=False):
     all_image = raw_image.copy()
     output_image = raw_image.copy()
+
+    smoothed_image = cv2.medianBlur(raw_image, 3)  # Медианный фильтр с ядром 3x3
 
     contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -134,14 +164,8 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
         if area < 1000:
             continue
 
-        #gray = cv2.cvtColor(raw_image, cv2.COLOR_BGR2GRAY)
-        #clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        #contrast_enhanced = clahe.apply(gray)
-
-        #contrast_enhanced_bgr = cv2.cvtColor(contrast_enhanced, cv2.COLOR_GRAY2BGR)
-
         # Текущая зона
-        roi = raw_image[y:y + h, x:x + w] #raw_image
+        roi = smoothed_image[y:y + h, x:x + w] #raw_image
 
         # Серое изображение
         roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -182,7 +206,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
 
         # Совмещение Otsu и Adaptive
         roi_adaptive = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                             cv2.THRESH_BINARY_INV, 31, 11)
+                                             cv2.THRESH_BINARY_INV, 33, 15)
         combined_roi = cv2.bitwise_and(roi_otsu, roi_adaptive)
 
         text_combined = process_roi(combined_roi)
@@ -205,7 +229,7 @@ def find_and_draw_digits(raw_image, processed_image, image_counter, save_results
             continue
 
         # Чистый Adaptive
-        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 13) # 21.7 roi_gray
+        binary_roi = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 33, 15) # 21.7 roi_gray
         text_binary = process_roi(binary_roi)
         #save_to_folder(binary_roi, binary_roi_folder, f"5_binary_{i}_{image_counter}.png")
         if process_and_save_roi(binary_roi, binary_roi_folder, "5_binary", i, text_binary, save_roi_steps=False):
