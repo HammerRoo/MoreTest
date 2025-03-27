@@ -1,0 +1,14 @@
+ultralytics>=8.0.0
+easyocr>=1.7.0
+paddleocr>=2.6.1.0
+mmocr>=1.0.0
+opencv-python>=4.5.0
+pyyaml>=6.0
+cv2
+numpy
+os
+pytesseract
+collections
+ocr_engine
+collections
+mmocr.apis
