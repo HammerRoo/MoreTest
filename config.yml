@@ -1,0 +1,24 @@
+detection:
+  yolo:
+    model_path: "yolov8n.pt"
+    confidence_threshold: 0.5
+    iou_threshold: 0.45
+
+ocr:
+  active_engine: "easyocr"  # easyocr | paddleocr | mmocr
+  number_length: [6, 12]
+  
+  easyocr:
+    languages: ["ru", "en"]
+    gpu: false
+    model_storage: "~/.easyocr/model"
+  
+  paddleocr:
+    lang: "ru"
+    use_gpu: false
+    use_angle_cls: true
+  
+  mmocr:
+    model: "SATRN"
+    config_file: null
+    device: "cuda:0"
